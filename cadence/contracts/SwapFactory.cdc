@@ -12,6 +12,7 @@ pub contract SwapFactory {
     access(self) let pairMap: { String: {String: Address} }
 
 
+
     pub event PairCreated(token0Key: String, token1Key: String, pairAddress: Address, numPairs: Int)
 
 
