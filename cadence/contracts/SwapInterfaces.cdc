@@ -8,5 +8,7 @@ pub contract interface SwapInterfaces {
         pub fun addLiquidity(tokenAVault: @FungibleToken.Vault, tokenBVault: @FungibleToken.Vault): @FungibleToken.Vault
         pub fun removeLiquidity(lpTokenVault: @FungibleToken.Vault) : @[FungibleToken.Vault]
         pub fun swap(inTokenAVault: @FungibleToken.Vault): @FungibleToken.Vault
+        pub fun getAmountIn(amountOut: UFix64): UFix64
+        pub fun getAmountOut(amountIn: UFix64): UFix64
     }
 }

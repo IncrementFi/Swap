@@ -162,9 +162,9 @@ pub contract SwapPair: FungibleToken {
         }
         var amountOut = 0.0
         if (inTokenAVault.isInstance(self.token0VaultType)) {
-            amountOut = SwapConfig.getAmountOut(exactAmountIn: inTokenAVault.balance, reserveIn: self.token0Vault.balance, reserveOut: self.token1Vault.balance)
+            amountOut = SwapConfig.getAmountOut(amountIn: inTokenAVault.balance, reserveIn: self.token0Vault.balance, reserveOut: self.token1Vault.balance)
         } else {
-            amountOut = SwapConfig.getAmountOut(exactAmountIn: inTokenAVault.balance, reserveIn: self.token1Vault.balance, reserveOut: self.token0Vault.balance)
+            amountOut = SwapConfig.getAmountOut(amountIn: inTokenAVault.balance, reserveIn: self.token1Vault.balance, reserveOut: self.token0Vault.balance)
         }
 
         if (inTokenAVault.isInstance(self.token0VaultType)) {
@@ -189,6 +189,13 @@ pub contract SwapPair: FungibleToken {
 
         pub fun addLiquidity(tokenAVault: @FungibleToken.Vault, tokenBVault: @FungibleToken.Vault): @FungibleToken.Vault {
             return <- SwapPair.addLiquidity(tokenAVault: <- tokenAVault, tokenBVault: <- tokenBVault)
+        }
+
+        pub fun getAmountIn(amountOut: UFix64): UFix64 {
+            return SwapConfig.getAmountIn(amountOut: amountOut, reserveIn: SwapPair.token0Vault.balance, reserveOut: SwapPair.token1Vault.balance)
+        }
+        pub fun getAmountOut(amountIn: UFix64): UFix64 {
+            return SwapConfig.getAmountOut(amountIn: amountIn, reserveIn: SwapPair.token0Vault.balance, reserveOut: SwapPair.token1Vault.balance)
         }
     }
 

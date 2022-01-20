@@ -2,14 +2,6 @@ pub contract SwapConfig {
     pub let PairPublicPath: PublicPath
 
 
-    pub let OraclePublicPath: PublicPath
-    pub let PairFactoryStoragePath: StoragePath
-    pub let PairFactoryPublicPath: PublicPath
-    pub let PairCertificateStoragePath: StoragePath
-    pub let PairCertificatePrivatePath: PrivatePath
-    
-    pub let RouterLiquidityPoolStoragePath: StoragePath
-    pub let RouterLiquidityPoolPublicPath: PublicPath
     // Scale factor applied to fixed point number calculation. For example: 1e18 means the actual baseRatePerBlock should
     // be baseRatePerBlock / 1e18. Note: The use of scale factor is due to fixed point number in cadence is only precise to 1e-8:
     // https://docs.onflow.org/cadence/language/values-and-types/#fixed-point-numbers
@@ -103,23 +95,23 @@ pub contract SwapConfig {
 
     // Helper function:
     // Given pair reserves and the exact input amount of an asset, returns the maximum output amount of the other asset
-    pub fun getAmountOut(exactAmountIn: UFix64, reserveIn: UFix64, reserveOut: UFix64): UFix64 {
+    pub fun getAmountOut(amountIn: UFix64, reserveIn: UFix64, reserveOut: UFix64): UFix64 {
         pre {
-            exactAmountIn > 0.0: "SwapPair: insufficient input amount"
+            amountIn > 0.0: "SwapPair: insufficient input amount"
             reserveIn > 0.0 && reserveOut > 0.0: "SwapPair: insufficient liquidity"
         }
-        let amountInWithFee = 0.997 * exactAmountIn
+        let amountInWithFee = 0.997 * amountIn
         return amountInWithFee * reserveOut / (reserveIn + amountInWithFee)
     }
 
     // Helper function:
     // Given pair reserves and the exact output amount of an asset wanted, returns the required (minimum) input amount of the other asset
-    pub fun getAmountIn(exactAmountOut: UFix64, reserveIn: UFix64, reserveOut: UFix64): UFix64 {
+    pub fun getAmountIn(amountOut: UFix64, reserveIn: UFix64, reserveOut: UFix64): UFix64 {
         pre {
-            exactAmountOut < reserveOut: "SwapPair: insufficient output amount"
+            amountOut < reserveOut: "SwapPair: insufficient output amount"
             reserveIn > 0.0 && reserveOut > 0.0: "SwapPair: insufficient liquidity"
         }
-        return exactAmountOut * reserveIn / (reserveOut - exactAmountOut) / 0.997
+        return amountOut * reserveIn / (reserveOut - amountOut) / 0.997
     }
 
 
@@ -127,19 +119,6 @@ pub contract SwapConfig {
 
         self.PairPublicPath = /public/increment_swap_pair
 
-
-
-        self.OraclePublicPath = /public/increment_swap_oracle
-        
-        self.RouterLiquidityPoolPublicPath = /public/increment_swap_router_lp
-        self.RouterLiquidityPoolStoragePath = /storage/increment_swap_router_lp
-
-        self.PairFactoryStoragePath = /storage/increment_swap_pair_factory
-        self.PairFactoryPublicPath = /public/increment_swap_factory
-
-        self.PairCertificateStoragePath = /storage/increment_swap_pair
-        self.PairCertificatePrivatePath = /private/increment_swap_pair
-        
         
         // 1e18
         self.scaleFactor = 1_000_000_000_000_000_000
