@@ -10,8 +10,10 @@ pub contract SwapPair: FungibleToken {
     
     pub let token0VaultType: Type
     pub let token1VaultType: Type
-    access(self) var token0Vault: @FungibleToken.Vault
-    access(self) var token1Vault: @FungibleToken.Vault
+    access(self) let token0Vault: @FungibleToken.Vault
+    access(self) let token1Vault: @FungibleToken.Vault
+    pub let token0Key: String
+    pub let token1Key: String
 
     // Event that is emitted when the contract is created
     pub event TokensInitialized(initialSupply: UFix64)
@@ -197,6 +199,15 @@ pub contract SwapPair: FungibleToken {
         pub fun getAmountOut(amountIn: UFix64): UFix64 {
             return SwapConfig.getAmountOut(amountIn: amountIn, reserveIn: SwapPair.token0Vault.balance, reserveOut: SwapPair.token1Vault.balance)
         }
+        pub fun getPairInfo(): [AnyStruct] {
+            return [
+                SwapPair.token0Key,
+                SwapPair.token1Key,
+                SwapPair.token0Vault.balance,
+                SwapPair.token1Vault.balance,
+                SwapPair.account.address
+            ]
+        }
     }
 
     init(token0Vault: @FungibleToken.Vault, token1Vault: @FungibleToken.Vault) {
@@ -210,6 +221,8 @@ pub contract SwapPair: FungibleToken {
         self.token0Vault <- token0Vault
         self.token1Vault <- token1Vault
 
+        self.token0Key = SwapConfig.SliceTokenTypeIdentifierFromVaultType(vaultTypeIdentifier: self.token0VaultType.identifier)
+        self.token1Key = SwapConfig.SliceTokenTypeIdentifierFromVaultType(vaultTypeIdentifier: self.token1VaultType.identifier)
 
         // Open public interface capability
         destroy <-self.account.load<@AnyResource>(from: /storage/pair_public)

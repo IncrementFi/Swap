@@ -1,0 +1,13 @@
+{
+    "CenterTokens" : {
+        "emulator": [
+            "A.0ae53cb6e3f42a79.FlowToken",
+            "A.f8d6e0586b0a20c7.wFlow",
+            "A.f8d6e0586b0a20c7.FUSD",
+            "A.f8d6e0586b0a20c7.BUSD",
+            "A.f8d6e0586b0a20c7.USDT",
+            "A.f8d6e0586b0a20c7.USDC",
+            "A.f8d6e0586b0a20c7.BLT"
+        ]
+    }
+}

@@ -91,29 +91,29 @@ pub contract SwapRouter {
             return <- self.swapRecursively(vaultIn: <-vaultIn, tokenKeyPath: tokenKeyPath, index: 0)
         }
         
-        let vaultOut1 <- self.swapToken0ForToken1(vaultIn: <- vaultIn, token0Key: tokenKeyPath[0], token1Key: tokenKeyPath[1])
+        let vaultOut1 <- self.swapWithOnePair(vaultIn: <- vaultIn, token0Key: tokenKeyPath[0], token1Key: tokenKeyPath[1])
         if tokenKeyPath.length == 2 {
             return <- vaultOut1
         }
 
-        let vaultOut2 <- self.swapToken0ForToken1(vaultIn: <- vaultOut1, token0Key: tokenKeyPath[1], token1Key: tokenKeyPath[2])
+        let vaultOut2 <- self.swapWithOnePair(vaultIn: <- vaultOut1, token0Key: tokenKeyPath[1], token1Key: tokenKeyPath[2])
         if tokenKeyPath.length == 3 {
             return <- vaultOut2
         }
 
-        let vaultOut3 <- self.swapToken0ForToken1(vaultIn: <- vaultOut2, token0Key: tokenKeyPath[2], token1Key: tokenKeyPath[3])
+        let vaultOut3 <- self.swapWithOnePair(vaultIn: <- vaultOut2, token0Key: tokenKeyPath[2], token1Key: tokenKeyPath[3])
         if tokenKeyPath.length == 4 {
             return <- vaultOut3
         }
 
-        let vaultOut4 <- self.swapToken0ForToken1(vaultIn: <- vaultOut3, token0Key: tokenKeyPath[3], token1Key: tokenKeyPath[4])
+        let vaultOut4 <- self.swapWithOnePair(vaultIn: <- vaultOut3, token0Key: tokenKeyPath[3], token1Key: tokenKeyPath[4])
         return <- vaultOut4
     
         // TODO event
     }
 
     /// one to one
-    pub fun swapToken0ForToken1(
+    pub fun swapWithOnePair(
         vaultIn: @FungibleToken.Vault,
         token0Key: String,
         token1Key: String

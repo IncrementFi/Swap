@@ -1,0 +1,44 @@
+import Token1Name from Token1Addr
+
+import FungibleToken from "../../contracts/tokens/FungibleToken.cdc"
+import SwapFactory from "../../contracts/SwapFactory.cdc"
+import SwapInterfaces from "../../contracts/SwapInterfaces.cdc"
+import SwapConfig from "../../contracts/SwapConfig.cdc"
+import SwapRouter from "../../contracts/SwapRouter.cdc"
+
+
+
+// deploy code copied by a deployed contract
+transaction(
+    tokenInKey: String,
+    tokenOutKey: String,
+
+    tokenInAmount: UFix64,
+    tokenInVaultPath: StoragePath,
+
+    tokenOutVaultPath: StoragePath,
+    tokenOutReceiverPath: PublicPath,
+    tokenOutBalancePath: PublicPath,
+) {
+    prepare(userAccount: AuthAccount) {
+        
+        let tokenInVault <- userAccount.borrow<&FungibleToken.Vault>(from: tokenInVaultPath)!.withdraw(amount: tokenInAmount)
+
+        let tokenOutVault <- SwapRouter.swapWithOnePair(vaultIn: <- tokenInVault, token0Key: tokenInKey, token1Key: tokenOutKey)
+        let tokenOutAmount = tokenOutVault.balance
+
+        
+        var tokenOutReceiverRef = userAccount.borrow<&FungibleToken.Vault>(from: tokenOutVaultPath)
+        if tokenOutReceiverRef == nil {
+            userAccount.save(<- Token1Name.createEmptyVault(), to: tokenOutVaultPath)
+            userAccount.link<&Token1Name.Vault{FungibleToken.Receiver}>(tokenOutReceiverPath, target: tokenOutVaultPath)
+            userAccount.link<&Token1Name.Vault{FungibleToken.Balance}>(tokenOutBalancePath, target: tokenOutVaultPath)
+
+            tokenOutReceiverRef = userAccount.borrow<&FungibleToken.Vault>(from: tokenOutVaultPath)
+        }
+
+        tokenOutReceiverRef!.deposit(from: <- tokenOutVault)
+        
+        log("=====> swap from ".concat(tokenInKey).concat(" to ").concat(tokenOutKey).concat(" at ").concat(tokenInAmount.toString()).concat(" to ").concat(tokenOutAmount.toString()))
+    }
+}

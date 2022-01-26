@@ -18,7 +18,7 @@ transaction(
 
         // TODO nil check
         let token0Vault <- userAccount.borrow<&FungibleToken.Vault>(from: token0VaultPath)!.withdraw(amount: token0In)
-        let token1Vault <- userAccount.borrow<&FungibleToken.Vault>(from: token1VaultPath)!.withdraw(amount: token0In)
+        let token1Vault <- userAccount.borrow<&FungibleToken.Vault>(from: token1VaultPath)!.withdraw(amount: token1In)
 
         // TODO nil check
         let lpToken <- getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!.addLiquidity(
@@ -27,6 +27,7 @@ transaction(
         )
 
         log("=====> add liquidity: ".concat(token0Key).concat(token1Key).concat("mint lp:").concat(lpToken.balance.toString()))
+        // TODO store lptoken
         destroy lpToken
     }
 }
