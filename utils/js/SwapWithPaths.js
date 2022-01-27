@@ -35,7 +35,8 @@ const keyConfig = {
     account: "0xf8d6e0586b0a20c7",
     keyIndex: 0,
     privateKey: "da193159f79102065ceb0c7cfef38910525e10a6a0c8c5109f645cb47f792a47",
-    SequenceNumber: 0
+    SequenceNumber: 0,
+    signature: "p256"
 };
 
 async function SwapWithPaths(paths, amountInSplit, tokenInVaultPath, tokenOutVaultPath, tokenOutReceiverPath, tokenOutBalancePath, network) {
