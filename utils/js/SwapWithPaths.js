@@ -39,45 +39,51 @@ const keyConfig = {
     signature: "p256"
 };
 
-async function SwapWithPaths(paths, amountInSplit, tokenInVaultPath, tokenOutVaultPath, tokenOutReceiverPath, tokenOutBalancePath, network) {
+/*
+    [
+        [A, 1, 2, B],
+        [A, 1, 4, B],
+        [A, 2, 4, B]
+    ]
+
+    [A, 1, 2, B, A, 1, 4, B, A, 2, 4, B]
+*/
+
+async function SwapWithPaths(pathFlat, amountInSplit, tokenInVaultPath, tokenOutVaultPath, tokenOutReceiverPath, tokenOutBalancePath, network) {
     const DeployConfig = require('./' + "swap.deploy.config." + network + ".json")
     const TokenListAll = require('./' + "tokenlist.all." + network + ".json")
 
     var CODE = DeployConfig.Codes.Transactions.SwapWithPaths
     
-    var tokenInKey = paths[0][0]
-    var tokenOutKey = paths[0][paths[0].length-1]
+    var pathLen = pathFlat.length
+    var tokenInKey = pathFlat[0]
+    var tokenOutKey = pathFlat[pathLen-1]
     
+    // 替换合约代码
     const tokenOutName = tokenOutKey.split('.')[2]
     const tokenOutAddr = "0x"+tokenOutKey.split('.')[1]
     CODE = CODE.replaceAll('Token1Name', tokenOutName)
     CODE = CODE.replaceAll('Token1Addr', tokenOutAddr)
     
-    var pathPlat = []
-    for (let i = 0; i < paths.length; ++i) {
-        var path = paths[i]
-        for (let j = 0; j < path.length; ++j) {
-            pathPlat.push(path[j])
-        }
-    }
+    // 输入的float -> string
     var amountInSplitString = []
-    //
     for (let i = 0; i < amountInSplit.length; ++i) {
         amountInSplitString.push( parseFloat(amountInSplit[i]).toFixed(8) )
     }
 
-
+    // 如果token在tokenList里从配置里读取4个path
     if (tokenInKey in TokenListAll) tokenInVaultPath = TokenListAll[tokenInKey].vaultPath;
     if (tokenOutKey in TokenListAll) {
         tokenOutVaultPath = TokenListAll[tokenOutKey].vaultPath;
         tokenOutReceiverPath = TokenListAll[tokenOutKey].vaultBalancePath;
         tokenOutBalancePath = TokenListAll[tokenOutKey].vaultReceiverPath;
     }
-    
+
     const vaultInPath = { "domain": "storage", "identifier": tokenInVaultPath };
     const vaultOutPath = { "domain": "storage", "identifier": tokenOutVaultPath };
     const receiverOutPath = { "domain": "public", "identifier": tokenOutReceiverPath };
     const balanceOutPath = { "domain": "public", "identifier": tokenOutBalancePath };
+
     FCL.config().put("accessNode.api", FLOW.rpc.emulator.accessNode)
     const myAuth = FLOW.authFunc(keyConfig);
     const response = await FCL.send([
@@ -85,8 +91,8 @@ async function SwapWithPaths(paths, amountInSplit, tokenInVaultPath, tokenOutVau
         ${CODE}
         `,
         FCL.args([
+            FCL.arg(pathFlat, T.Array(T.String)),
             FCL.arg(amountInSplitString, T.Array(T.UFix64)),
-            FCL.arg(pathPlat, T.Array(T.String)),
             FCL.arg(vaultInPath, T.Path),
             FCL.arg(vaultOutPath, T.Path),
             FCL.arg(receiverOutPath, T.Path),

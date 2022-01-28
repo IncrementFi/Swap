@@ -27,6 +27,7 @@
     "https-proxy-agent": "^5.0.0",
     "log-timestamp": "^0.3.0",
     "node-fetch": "^2.6.2",
-    "sha3": "^2.1.4"
+    "sha3": "^2.1.4",
+    "heap": "^0.2.7"
   }
 }
