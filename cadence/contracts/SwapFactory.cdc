@@ -85,6 +85,14 @@ pub contract SwapFactory {
         }
     }
 
+    pub fun getPairInfo(token0Key: String, token1Key: String): AnyStruct? {
+        var pairAddr = self.getPairAddress(token0Key: token0Key, token1Key: token1Key)
+        if pairAddr == nil {
+            return nil
+        }
+        return getAccount(pairAddr!).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!.getPairInfo()
+    }
+
     pub fun getPairArrLength(): Int {
         return self.pairArr.length
     }

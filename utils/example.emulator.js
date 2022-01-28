@@ -10,6 +10,7 @@ const {QueryPairInfoByAddrs} = require("./js/QueryPairInfoByAddrs")
 const {AddLiquidity} = require("./js/AddLiquidity")
 const {CreatePair} = require("./js/CreatePair")
 const {SwapWithPaths} = require("./js/SwapWithPaths")
+const {QueryPairInfoByTokenKey} = require("./js/QueryPairInfoByTokenKey")
 
 
 
@@ -105,7 +106,7 @@ const CenterTokens = DeployConfig.Router.CenterTokens;
     // 10. 前端需要发送tx完成swap交易
     // Input:
     //  @pathFlat: EvaSwap返回路径的一维数组平坦化 [tokenInKey, token1, tokenOutKey, tokenInKey, token2, tokenOutKey]
-    //  @amountInSplit: 输入价格拆分的数组 [20, 30]
+    //  @amountInSplit: 每条拆分路径输入价格的数组 [20, 30]
     //  @vaultInPath tokenInKey的vaultPath，在tokenlist里的token可以从配置里取
     //  @vaultOutPath等三个是 tokenOutKey的相关path
     // TODO 这里还需要有滑点设置、过期时间等，先简单做。
@@ -118,7 +119,35 @@ const CenterTokens = DeployConfig.Router.CenterTokens;
     }
     await SwapWithPaths(pathFlat, amountInSplit, "vaultInPath", "vaultOutPath", "receiverOutPath", "balanceOutPath", network)
 
-    // 11. Add Liquidity
+
+    // 11. Create Pair
+    {
+        // 用户选择了流动性的两个token
+        var token0Key = "A.f8d6e0586b0a20c7.USDT"
+        var token1Key = "A.f8d6e0586b0a20c7.USDC"
+
+        // 获取该pair当前info，如果不存在则可以创建
+        var pairInfo = await QueryPairInfoByTokenKey(token0Key, token1Key, network)
+        if (pairInfo == null) {
+            // pair不存在
+        } else {
+            /*
+            pairInfo = [
+                    'A.f8d6e0586b0a20c7.wFlow',  // 0: tokenInKey
+                    'A.f8d6e0586b0a20c7.USDC',   // 1: tokenOutKey
+                    '4000.00000000',             // 2: tokenInBalance
+                    '10000.00000000',            // 3: tokenOutBalance
+                    '0x120e725050340cab'         // 4: pairAddr
+                ]
+            */
+        }
+
+        // 创建pair [Transaction]
+        // await CreatePair(token0Key, token1Key, network)
+
+    }
+
+    // 12. Add Liquidity
     {
         // 11.1 用户选择了流动性的两个token
         var token0Key = "A.f8d6e0586b0a20c7.USDT"
@@ -129,7 +158,11 @@ const CenterTokens = DeployConfig.Router.CenterTokens;
         var token1Amount = 101.0
 
         // 11.3 估算需要的另外一个数量（如果是首次添加流动性，则两个都需要输入）
-        // TODO
+        // 通过 QueryPairInfoByTokenKey【同Create Pair】 查询这两个token的balance
+        var token0Balance = 10000.0
+        var token1Balance = 11000.0
+        // 当用户输入了 token0Amount = 100
+        // 则等比例显示 token1Amount = 110
 
         // 11.5 TODO 滑点
 
@@ -137,19 +170,7 @@ const CenterTokens = DeployConfig.Router.CenterTokens;
         await AddLiquidity(token0Key, token1Key, token0Amount, token1Amount, "vault0VaultPath", "vault1VaultPath", network)
     }
 
-    // 12. Create Pair
-    {
-        // 用户选择了流动性的两个token
-        var token0Key = "A.f8d6e0586b0a20c7.USDT"
-        var token1Key = "A.01cf0e2f2f715450.TestTokenA"
-
-        // 获取该pair当前info，如果不存在则可以创建
-        // TODO
-
-        // 创建 [Transaction]
-        // await CreatePair(token0Key, token1Key, network)
-
-    }
+    
 
     console.log( Date.now() - startTime, 'ms' )
 })();
