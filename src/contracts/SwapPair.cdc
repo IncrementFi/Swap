@@ -102,8 +102,7 @@ pub contract SwapPair: FungibleToken {
         pre {
             tokenAVault.balance > 0.0 && tokenBVault.balance > 0.0 : "SwapPair: added zero liquidity"
             (tokenAVault.isInstance(self.token0VaultType) && tokenBVault.isInstance(self.token1VaultType)) || 
-            (tokenBVault.isInstance(self.token0VaultType) && tokenAVault.isInstance(self.token1VaultType))
-                : "SwapPair: added incompatible liquidity pair vaults"
+            (tokenBVault.isInstance(self.token0VaultType) && tokenAVault.isInstance(self.token1VaultType)) : "SwapPair: added incompatible liquidity pair vaults"
         }
         
         // Add initial liquidity
@@ -193,11 +192,19 @@ pub contract SwapPair: FungibleToken {
             return <- SwapPair.addLiquidity(tokenAVault: <- tokenAVault, tokenBVault: <- tokenBVault)
         }
 
-        pub fun getAmountIn(amountOut: UFix64): UFix64 {
-            return SwapConfig.getAmountIn(amountOut: amountOut, reserveIn: SwapPair.token0Vault.balance, reserveOut: SwapPair.token1Vault.balance)
+        pub fun getAmountIn(amountOut: UFix64, tokenOutKey: String): UFix64 {
+            if tokenOutKey == SwapPair.token1Key {
+                return SwapConfig.getAmountIn(amountOut: amountOut, reserveIn: SwapPair.token0Vault.balance, reserveOut: SwapPair.token1Vault.balance)
+            } else {
+                return SwapConfig.getAmountIn(amountOut: amountOut, reserveIn: SwapPair.token1Vault.balance, reserveOut: SwapPair.token0Vault.balance)
+            }
         }
-        pub fun getAmountOut(amountIn: UFix64): UFix64 {
-            return SwapConfig.getAmountOut(amountIn: amountIn, reserveIn: SwapPair.token0Vault.balance, reserveOut: SwapPair.token1Vault.balance)
+        pub fun getAmountOut(amountIn: UFix64, tokenInKey: String): UFix64 {
+            if tokenInKey == SwapPair.token0Key {
+                return SwapConfig.getAmountOut(amountIn: amountIn, reserveIn: SwapPair.token0Vault.balance, reserveOut: SwapPair.token1Vault.balance)
+            } else {
+                return SwapConfig.getAmountOut(amountIn: amountIn, reserveIn: SwapPair.token1Vault.balance, reserveOut: SwapPair.token0Vault.balance)
+            }
         }
         pub fun getPairInfo(): [AnyStruct] {
             return [

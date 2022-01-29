@@ -1,0 +1,106 @@
+import Token1Name from Token1Addr
+
+import FungibleToken from "../../contracts/tokens/FungibleToken.cdc"
+import SwapRouter from "../../contracts/SwapRouter.cdc"
+import SwapError from "../../contracts/SwapError.cdc"
+
+// deploy code copied by a deployed contract
+transaction(
+    tokenKeyPathFlat: [String],
+    amountInSplit: [UFix64],
+    amountOutMin: UFix64,
+    deadline: UFix64,
+
+    tokenInVaultPath: StoragePath,
+    tokenOutVaultPath: StoragePath,
+    tokenOutReceiverPath: PublicPath,
+    tokenOutBalancePath: PublicPath,
+) {
+    prepare(userAccount: AuthAccount) {
+        assert( deadline >= getCurrentBlock().timestamp, message:
+            SwapError.ErrorEncode(
+                msg: "EXPIRED",
+                err: SwapError.ErrorCode.EXPIRED
+            )
+        )
+
+        var len = tokenKeyPathFlat.length
+
+        let tokenInKey = tokenKeyPathFlat[0]
+        let tokenOutKey = tokenKeyPathFlat[len-1]
+
+        var tokenOutAmountTotal = 0.0
+
+        var tokenOutReceiverRef = userAccount.borrow<&FungibleToken.Vault>(from: tokenOutVaultPath)
+        if tokenOutReceiverRef == nil {
+            userAccount.save(<- Token1Name.createEmptyVault(), to: tokenOutVaultPath)
+            userAccount.link<&Token1Name.Vault{FungibleToken.Receiver}>(tokenOutReceiverPath, target: tokenOutVaultPath)
+            userAccount.link<&Token1Name.Vault{FungibleToken.Balance}>(tokenOutBalancePath, target: tokenOutVaultPath)
+
+            tokenOutReceiverRef = userAccount.borrow<&FungibleToken.Vault>(from: tokenOutVaultPath)
+        }
+
+        var pathIndex = 0
+        var i = 0
+        var path: [String] = []
+        while(i < len) {
+            var curTokenKey = tokenKeyPathFlat[i]
+            path.append(curTokenKey)
+            if (curTokenKey == tokenOutKey) {
+                log(path)
+                var tokenInAmount = amountInSplit[pathIndex]
+                log("in ".concat(tokenInAmount.toString()))
+
+                let tokenInVault <- userAccount.borrow<&FungibleToken.Vault>(from: tokenInVaultPath)!.withdraw(amount: tokenInAmount)
+
+                let tokenOutVault <- SwapRouter.swap(vaultIn: <- tokenInVault, tokenKeyPath: path)
+
+                log("out ".concat(tokenOutVault.balance.toString()))
+
+                tokenOutAmountTotal = tokenOutAmountTotal + tokenOutVault.balance
+                tokenOutReceiverRef!.deposit(from: <- tokenOutVault)
+
+                path = []
+                pathIndex = pathIndex + 1
+            }
+            i = i + 1
+        }
+        
+        log("total out ".concat(tokenOutAmountTotal.toString()))
+        log("min out ".concat(amountOutMin.toString()))
+
+        assert( tokenOutAmountTotal >= amountOutMin, message:
+            SwapError.ErrorEncode(
+                msg: "INSUFFICIENT_OUTPUT_AMOUNT expect min ".concat(amountOutMin.toString()).concat(" got ").concat(tokenOutAmountTotal.toString()),
+                err: SwapError.ErrorCode.SLIPPAGE_OFFSET_TOO_LARGE
+            )
+        )
+
+
+
+        /*
+        let tokenInVault <- userAccount.borrow<&FungibleToken.Vault>(from: tokenInVaultPath)!.withdraw(amount: tokenInAmount)
+
+        let tokenOutVault <- SwapRouter.swap(vaultIn: <- tokenInVault, tokenKeyPath: tokenKeyPath)
+        
+        let tokenOutAmount = tokenOutVault.balance
+
+        
+        var tokenOutReceiverRef = userAccount.borrow<&FungibleToken.Vault>(from: tokenOutVaultPath)
+        if tokenOutReceiverRef == nil {
+            //userAccount.save(<- Token1Name.createEmptyVault(), to: tokenOutVaultPath)
+            //userAccount.link<&Token1Name.Vault{FungibleToken.Receiver}>(tokenOutReceiverPath, target: tokenOutVaultPath)
+            //userAccount.link<&Token1Name.Vault{FungibleToken.Balance}>(tokenOutBalancePath, target: tokenOutVaultPath)
+
+            tokenOutReceiverRef = userAccount.borrow<&FungibleToken.Vault>(from: tokenOutVaultPath)
+        }
+
+        tokenOutReceiverRef!.deposit(from: <- tokenOutVault)
+
+        let tokenInKey = tokenKeyPath[0]
+        let tokenOutKey = tokenKeyPath[tokenKeyPath.length-1]
+        
+        log("=====> swap path from ".concat(tokenInKey).concat(" to ").concat(tokenOutKey).concat(" at ").concat(tokenInAmount.toString()).concat(" to ").concat(tokenOutAmount.toString()))
+         */
+    }
+}

@@ -52,7 +52,7 @@ async function SwapWithOnePair() {
     const vaultOutPath = { "domain": "storage", "identifier": tokenOutVaultPath };
     const receiverOutPath = { "domain": "public", "identifier": tokenOutReceiverPath };
     const balanceOutPath = { "domain": "public", "identifier": tokenOutBalancePath };
-    FCL.config().put("accessNode.api", FLOW.rpc.emulator.accessNode)
+    FCL.config().put("accessNode.api", FLOW.rpc[network].accessNode)
     const myAuth = FLOW.authFunc(keyConfig);
     const response = await FCL.send([
         FCL.transaction`

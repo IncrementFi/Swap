@@ -34,17 +34,25 @@ console.log('swap path', tokenKeyPath)
 
 
 //
-const keyConfig = {
+var keyConfig = {
     account: "0xf8d6e0586b0a20c7",
     keyIndex: 0,
     privateKey: "da193159f79102065ceb0c7cfef38910525e10a6a0c8c5109f645cb47f792a47",
     SequenceNumber: 0,
     signature: "p256"
 };
+if (network == "testnet") {
+    keyConfig = {
+        account: "0xf8bf9687f8dca813",
+        keyIndex: 0,
+        privateKey: "3e173ab34b4629ee8e16ee95a6aacb5f088fc95e53ba28ef0f528bf8bcce51ec",
+        SequenceNumber: 0
+    };
+}
 
-async function SwapWithPairPath() {
+async function SwapWithOnePath() {
 
-    var CODE = DeployConfig.Codes.Transactions.SwapWithPairPath
+    var CODE = DeployConfig.Codes.Transactions.SwapWithOnePath
     
     const tokenOutName = tokenOutKey.split('.')[2]
     const tokenOutAddr = "0x"+tokenOutKey.split('.')[1]
@@ -63,7 +71,7 @@ async function SwapWithPairPath() {
     const vaultOutPath = { "domain": "storage", "identifier": tokenOutVaultPath };
     const receiverOutPath = { "domain": "public", "identifier": tokenOutReceiverPath };
     const balanceOutPath = { "domain": "public", "identifier": tokenOutBalancePath };
-    FCL.config().put("accessNode.api", FLOW.rpc.emulator.accessNode)
+    FCL.config().put("accessNode.api", FLOW.rpc[network].accessNode)
     const myAuth = FLOW.authFunc(keyConfig);
     const response = await FCL.send([
         FCL.transaction`
@@ -80,12 +88,12 @@ async function SwapWithPairPath() {
         FCL.proposer(myAuth),
         FCL.authorizations([myAuth]),
         FCL.payer(myAuth),
-        FCL.limit(9999),
+        FCL.limit(3000),
     ]);
     return await FCL.tx(response).onceSealed();
 }
 
 
 (async ()=> {
-    SwapWithPairPath()
+    SwapWithOnePath()
 })()

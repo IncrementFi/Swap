@@ -8,7 +8,6 @@ import SwapRouter from "../../contracts/SwapRouter.cdc"
 
 
 
-// deploy code copied by a deployed contract
 transaction(
     tokenInAmount: UFix64,
     tokenKeyPath: [String],

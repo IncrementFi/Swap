@@ -16,7 +16,7 @@ const {QueryTimestamp} = require("./js/QueryTimestamp")
 
 
 // Config
-const network = "emulator";
+const network = "testnet";
 const DeployConfig = require( './js/' + "swap.deploy.config." + network + ".json" );
 const CenterTokens = DeployConfig.Router.CenterTokens;
 
@@ -39,11 +39,11 @@ const CenterTokens = DeployConfig.Router.CenterTokens;
 
     // 3. 当用户在查询框输入address后，发起该script，查询tokens
     // Output: ["FlowToken", "FUSD"]
-    var tokenNames = await QueryTokenNames("0x01cf0e2f2f715450", network)
+    //var tokenNames = await QueryTokenNames("0x01cf0e2f2f715450", network)
 
     // 4. 当用户选取两个tokenKey
-    var tokenInKey = "A.f8d6e0586b0a20c7.USDT"
-    var tokenOutKey = "A.f8d6e0586b0a20c7.USDC"
+    var tokenInKey = "A.f9dad0d4c14a92b5.USDT"
+    var tokenOutKey = "A.f9dad0d4c14a92b5.USDC"
 
     // 5. 初始化寻路，每次用户修改输入的tokenKey之后需要重新初始化
     // Input:
@@ -107,16 +107,19 @@ const CenterTokens = DeployConfig.Router.CenterTokens;
             ]
         }
     */
-    
+       // ['A.f8d6e0586b0a20c7.USDT','A.f8d6e0586b0a20c7.wFlow', 'A.f8d6e0586b0a20c7.USDC', 'A.f8d6e0586b0a20c7.USDT', 'A.f8d6e0586b0a20c7.FUSD', 'A.f8d6e0586b0a20c7.USDC', 'A.f8d6e0586b0a20c7.USDT', 'A.f8d6e0586b0a20c7.BUSD', 'A.f8d6e0586b0a20c7.USDC', 'A.f8d6e0586b0a20c7.USDT', 'A.f8d6e0586b0a20c7.USDC']
+       // ['200.00000000', '200.00000000', '200.00000000', '400.00000000']
+       // 749.0
 
-    // 10. 前端需要发送tx完成swap交易
     
     // 10.1 用户的滑点设置
     var slippageRate = 0.1  // 10%
 
     // 10.2 用户的交易超时设置
     var expireDuration = 300  // 120s
-
+    
+    // 10. SwapExactTokensForTokens
+    // 用户输入固定的兑换前数量进行swap
     // Input:
     //  @tokenKeyPathFlat: EvaSwap返回路径的一维数组平坦化 [tokenInKey, token1, tokenOutKey, tokenInKey, token2, tokenOutKey]
     //  @amountInSplit: 每条拆分路径输入价格的数组 [20, 30]
@@ -140,12 +143,15 @@ const CenterTokens = DeployConfig.Router.CenterTokens;
         network
     )
 
+    // SwapTokensForExactTokens
+    // 用户输入固定的兑换后的额度，进行swap
+    
 
     // 11. Create Pair
     {
         // 用户选择了流动性的两个token
-        var token0Key = "A.f8d6e0586b0a20c7.USDT"
-        var token1Key = "A.f8d6e0586b0a20c7.USDC"
+        var token0Key = "A.f9dad0d4c14a92b5.USDT"
+        var token1Key = "A.f9dad0d4c14a92b5.USDC"
 
         // 获取该pair当前info，如果不存在则可以创建
         var pairInfo = await QueryPairInfoByTokenKey(token0Key, token1Key, network)
@@ -188,7 +194,7 @@ const CenterTokens = DeployConfig.Router.CenterTokens;
         // 11.5 TODO 滑点
 
         // 11.4 [Transaction]
-        await AddLiquidity(token0Key, token1Key, token0Amount, token1Amount, "vault0VaultPath", "vault1VaultPath", network)
+        //await AddLiquidity(token0Key, token1Key, token0Amount, token1Amount, "vault0VaultPath", "vault1VaultPath", network)
     }
 
     

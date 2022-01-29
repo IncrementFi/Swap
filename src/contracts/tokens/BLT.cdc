@@ -201,6 +201,7 @@ pub contract BLT: FungibleToken {
         self.totalSupply = 0.0
 
         let admin <- create Administrator()
+
         self.account.save(<-admin, to: self.AdminStoragePath)
 
         // Emit an event that shows that the contract was initialized
