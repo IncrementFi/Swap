@@ -8,6 +8,7 @@ pub contract SwapError {
         pub case SLIPPAGE_OFFSET_TOO_LARGE
         pub case EXCESSIVE_INPUT_AMOUNT
         pub case EXPIRED
+        pub case INSUFFICIENT_BALANCE
     }
 
     pub fun ErrorEncode(msg: String, err: ErrorCode): String {

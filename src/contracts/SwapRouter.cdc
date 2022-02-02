@@ -53,7 +53,7 @@ pub contract SwapRouter {
 
             amounts[i-1] = pairPublicRef.getAmountIn(amountOut: amounts[i], tokenOutKey: tokenKeyPath[i])
 
-            i = i + 1
+            i = i - 1
         }
         
         return amounts
@@ -112,7 +112,7 @@ pub contract SwapRouter {
         pre {
             tokenKeyPath.length >= 2: "Invalid path."
         }
-
+        /// Split the loop to reduce gas cost
         let vaultOut1 <- self.swapWithOnePair(vaultIn: <- vaultIn, token0Key: tokenKeyPath[0], token1Key: tokenKeyPath[1])
         if tokenKeyPath.length == 2 {
             return <-vaultOut1
@@ -177,18 +177,6 @@ pub contract SwapRouter {
         return <- lpTokenVault
     }
 
-    // TODO limited check
-    /*
-    pub fun removeLiquidity(
-        lpTokenVault: @FungibleToken.Vault,
-        pairAddr: Address,
-        amountAMin: UFix64,
-        amountBMin: UFix64,
-        deadlineTimeStamp: UFix64
-    ) : @[FungibleToken.Vault] {
-
-    }
-    */
 
     pub fun removeLiquidity(
         lpTokenVault: @FungibleToken.Vault,

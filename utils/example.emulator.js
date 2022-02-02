@@ -10,6 +10,8 @@ const {QueryPairInfoByAddrs} = require("./js/QueryPairInfoByAddrs")
 const {AddLiquidity} = require("./js/AddLiquidity")
 const {CreatePair} = require("./js/CreatePair")
 const {SwapExactTokensForTokens} = require("./js/SwapExactTokensForTokens")
+const {SwapTokensForExactTokens} = require("./js/SwapTokensForExactTokens")
+
 const {QueryPairInfoByTokenKey} = require("./js/QueryPairInfoByTokenKey")
 const {QueryTimestamp} = require("./js/QueryTimestamp")
 
@@ -72,8 +74,8 @@ const CenterTokens = DeployConfig.Router.CenterTokens;
     
 
     // 8. 当用户输入tokenIn的数量  [UI]
-    var tokenInAmount = 1000.0
-    var tokenOutAmount = 0.0 // 只有一个大于0
+    var tokenInAmount = 0.0
+    var tokenOutAmount = 1000.0 // 只有一个大于0
 
 
     var paths = []
@@ -115,8 +117,8 @@ const CenterTokens = DeployConfig.Router.CenterTokens;
     var slippageRate = 0.1  // 10%
 
     // 10.2 用户的交易超时设置
-    var expireDuration = 300  // 120s
-
+    var expireDuration = 3000  // 120s
+    
     // Input:
     //  @tokenKeyPathFlat: EvaSwap返回路径的一维数组平坦化 [tokenInKey, token1, tokenOutKey, tokenInKey, token2, tokenOutKey]
     //  @amountInSplit: 每条拆分路径输入价格的数组 [20, 30]
@@ -124,21 +126,38 @@ const CenterTokens = DeployConfig.Router.CenterTokens;
     //  @vaultOutPath等三个是 tokenOutKey的相关path
     var tokenKeyPathFlat = []
     var amountInSplit = []
+    var amountOutSplit = []
     for (var i = 0; i < resJson.routes.length; ++i) {
         var routeJson = resJson.routes[i]
         tokenKeyPathFlat = tokenKeyPathFlat.concat(routeJson.route)
         amountInSplit.push(parseFloat(routeJson.routeAmountIn).toFixed(8))
+        amountOutSplit.push(parseFloat(routeJson.routeAmountOut).toFixed(8))
     }
-    var estimateOut = resJson.tokenOutAmount
-    var amountOutMin = estimateOut * (1.0 - slippageRate)
-    await SwapExactTokensForTokens(
-        tokenKeyPathFlat,
-        amountInSplit,
-        amountOutMin,
-        parseFloat(curTimestamp) + expireDuration,
-        "vaultInPath", "vaultOutPath", "receiverOutPath", "balanceOutPath",
-        network
-    )
+    // SwapExactTokensForTokens
+    if (tokenInAmount > 0.0 && tokenOutAmount == 0.0) {
+        var estimateOut = resJson.tokenOutAmount
+        var amountOutMin = estimateOut * (1.0 - slippageRate)
+        await SwapExactTokensForTokens(
+            tokenKeyPathFlat,
+            amountInSplit,
+            amountOutMin,
+            parseFloat(curTimestamp) + expireDuration,
+            "vaultInPath", "vaultOutPath", "receiverOutPath", "balanceOutPath",
+            network
+        )
+    } else if (tokenInAmount == 0.0 && tokenOutAmount > 0.0) {
+        var estimateIn = resJson.tokenInAmount
+        var amountInMax = estimateIn / (1.0 - slippageRate)
+
+        await SwapTokensForExactTokens(
+            tokenKeyPathFlat,
+            amountOutSplit,
+            amountInMax,
+            parseFloat(curTimestamp) + expireDuration,
+            "vaultInPath", "vaultOutPath", "receiverOutPath", "balanceOutPath",
+            network
+        )
+    }
 
 
     // 11. Create Pair
