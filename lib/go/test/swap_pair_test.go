@@ -404,7 +404,7 @@ func TestSwapPairContracts(t *testing.T) {
 		newPairAddrStr := fmt.Sprint(result)	
 
 		removeLiquidityScript := templates.GenerateRemoveLiquidityScript(pairAddrStr, newPairAddrStr)
-		fmt.Println(string(removeLiquidityScript))
+		// fmt.Println(string(removeLiquidityScript))
 		tx := createTxWithTemplateAndAuthorizer(b, removeLiquidityScript, newAccountAddr)
 		tx.AddRawArgument(jsoncdc.MustEncode(CadenceUFix64("20.0")))
 		tx.AddRawArgument(jsoncdc.MustEncode(cadence.String(tokenAIdentifier)))

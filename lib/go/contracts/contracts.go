@@ -1,6 +1,6 @@
 package contracts
 
-//go:generate go run github.com/kevinburke/go-bindata/go-bindata -prefix ../../../cadence/contracts -o internal/assets/assets.go -pkg assets -nometadata -nomemcopy ../../../cadence/contracts/...
+//go:generate go run github.com/kevinburke/go-bindata/go-bindata -prefix ../../../src/contracts -o internal/assets/assets.go -pkg assets -nometadata -nomemcopy ../../../src/contracts/...
 
 import (
 	"github.com/IncrementFi/Swap-v2/lib/go/util"

@@ -1,6 +1,6 @@
 package templates
 
-//go:generate go run github.com/kevinburke/go-bindata/go-bindata -prefix ../../../cadence/transactions -o internal/trans/assets.go -pkg assets_trans -nometadata -nomemcopy ../../../cadence/transactions/...
+//go:generate go run github.com/kevinburke/go-bindata/go-bindata -prefix ../../../src/transactions -o internal/trans/assets.go -pkg assets_trans -nometadata -nomemcopy ../../../src/transactions/...
 
 import (		
 	"strings"	

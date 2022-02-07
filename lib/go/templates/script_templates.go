@@ -1,5 +1,5 @@
 package templates
-//go:generate go run github.com/kevinburke/go-bindata/go-bindata -prefix ../../../cadence/scripts -o internal/script/assets.go -pkg assets_script -nometadata -nomemcopy ../../../cadence/scripts/...
+//go:generate go run github.com/kevinburke/go-bindata/go-bindata -prefix ../../../src/scripts -o internal/script/assets.go -pkg assets_script -nometadata -nomemcopy ../../../src/scripts/...
 import (
 	"github.com/IncrementFi/Swap-v2/lib/go/templates/internal/script"
 	"github.com/IncrementFi/Swap-v2/lib/go/util"	
