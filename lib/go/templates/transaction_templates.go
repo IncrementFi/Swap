@@ -14,6 +14,7 @@ const (
 	deployPairFileName = "factory/deploy_pair_template.cdc"
 	mintTokensFileName = "test/mint_all_tokens.cdc"
 	addLiquidityFileName = "user/add_liquidity.cdc"
+	removeLiquidityFileName = "user/remove_liquidity.cdc"
 )
 
 
@@ -38,5 +39,10 @@ func GenerateMintTokensScript(swapCoreAddr string) []byte {
 
 func GenerateAddLiquidityScript(swapCoreAddr string, swapPairAddr string) []byte {
 	code := assets_trans.MustAsset(addLiquidityFileName)
+	return util.ReplaceImports(code, swapCoreAddr, swapPairAddr)
+}
+
+func GenerateRemoveLiquidityScript(swapCoreAddr string, swapPairAddr string) []byte {
+	code := assets_trans.MustAsset(removeLiquidityFileName)
 	return util.ReplaceImports(code, swapCoreAddr, swapPairAddr)
 }

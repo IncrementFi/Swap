@@ -316,15 +316,123 @@ func TestSwapPairContracts(t *testing.T) {
 		fmt.Println(pairArrayStr)
 
 		// Query LPToken balance
-		queryPairBalanceScript := templates.GenerateQueryPairBalance(pairAddrStr, newPairAddrStr)
-		fmt.Println(string(queryPairBalanceScript))
+		queryPairBalanceScript := templates.GenerateQueryPairBalance(pairAddrStr, newPairAddrStr)		
 		result = executeScriptAndCheck(t, b, 
 			queryPairBalanceScript,
 			[][]byte{
 				jsoncdc.MustEncode(cadence.Address(flow.HexToAddress(pairAddrStr))),
 				jsoncdc.MustEncode(cadence.Path{Domain: "public", Identifier: "concattokentestBalance"}), // TODO: auto change identifier
 			},
+		)		
+		assertEqual(t, CadenceUFix64("99.99999999"), result)
+	})
+
+	t.Run("Should be able to add liquidity again to swap pair(TestTokenA,TestTokenB)", func(t *testing.T) {
+		tokenAIdentifier := "A." + tokenAddr.String() + ".TestTokenA"
+		tokenBIdentifier := "A." + tokenAddr.String() + ".TestTokenB"
+
+		queryPairAddrScript := templates.GenerateQueryPairAddr(pairAddrStr)
+		result := executeScriptAndCheck(t, b, 
+			queryPairAddrScript,
+			[][]byte{
+				jsoncdc.MustEncode(cadence.String(tokenAIdentifier)),
+				jsoncdc.MustEncode(cadence.String(tokenBIdentifier)),
+			},
 		)
-		assertEqual(t, CadenceUFix64("99.99999979"), result)
+		assert.NotNil(t, result)
+		newPairAddrStr := fmt.Sprint(result)		
+		fmt.Println("new pair address : " + newPairAddrStr)
+		addLiquidityScript := templates.GenerateAddLiquidityScript(pairAddrStr, newPairAddrStr)
+		tx = createTxWithTemplateAndAuthorizer(b, addLiquidityScript, newAccountAddr)
+		tx.AddRawArgument(jsoncdc.MustEncode(cadence.String(tokenAIdentifier)))
+		tx.AddRawArgument(jsoncdc.MustEncode(cadence.String(tokenBIdentifier)))
+		tx.AddRawArgument(jsoncdc.MustEncode(CadenceUFix64("10.0")))
+		tx.AddRawArgument(jsoncdc.MustEncode(CadenceUFix64("10.0")))
+		tx.AddRawArgument(jsoncdc.MustEncode(cadence.Path{Domain: "storage", Identifier: "testTokenAVault"}))
+		tx.AddRawArgument(jsoncdc.MustEncode(cadence.Path{Domain: "storage", Identifier: "testTokenBVault"}))
+		signAndSubmit(
+			t, b, tx,
+			[]flow.Address{
+				b.ServiceKey().Address,
+				newAccountAddr,
+			},
+			[]crypto.Signer{
+				b.ServiceKey().Signer(),
+				newAccountSigner,
+			},
+			false,
+		)
+
+		queryPairInfoScript := templates.GenerateQueryPairInfoByAddrsScript(pairAddrStr)
+		addrArray := make([]cadence.Value, 1)
+		addrArray[0] = cadence.Address(flow.HexToAddress(newPairAddrStr))
+		result = executeScriptAndCheck(t, b, 
+			queryPairInfoScript,
+			[][]byte{
+				jsoncdc.MustEncode(cadence.NewArray(addrArray)),
+			},
+		)
+		assert.NotNil(t, result)
+		pairArrayStr := fmt.Sprint(result)
+		fmt.Println(pairArrayStr)
+
+		// Query LPToken balance
+		queryPairBalanceScript := templates.GenerateQueryPairBalance(pairAddrStr, newPairAddrStr)		
+		result = executeScriptAndCheck(t, b, 
+			queryPairBalanceScript,
+			[][]byte{
+				jsoncdc.MustEncode(cadence.Address(flow.HexToAddress(pairAddrStr))),
+				jsoncdc.MustEncode(cadence.Path{Domain: "public", Identifier: "concattokentestBalance"}), // TODO: auto change identifier
+			},
+		)		
+		assertEqual(t, CadenceUFix64("109.99999999"), result)
+	})
+
+	t.Run("Should be able to remove liquidity from swap pair(TestTokenA,TestTokenB)", func(t *testing.T) {
+		tokenAIdentifier := "A." + tokenAddr.String() + ".TestTokenA"
+		tokenBIdentifier := "A." + tokenAddr.String() + ".TestTokenB"
+
+		queryPairAddrScript := templates.GenerateQueryPairAddr(pairAddrStr)
+		result := executeScriptAndCheck(t, b, 
+			queryPairAddrScript,
+			[][]byte{
+				jsoncdc.MustEncode(cadence.String(tokenAIdentifier)),
+				jsoncdc.MustEncode(cadence.String(tokenBIdentifier)),
+			},
+		)
+		assert.NotNil(t, result)
+		newPairAddrStr := fmt.Sprint(result)	
+
+		removeLiquidityScript := templates.GenerateRemoveLiquidityScript(pairAddrStr, newPairAddrStr)
+		fmt.Println(string(removeLiquidityScript))
+		tx := createTxWithTemplateAndAuthorizer(b, removeLiquidityScript, newAccountAddr)
+		tx.AddRawArgument(jsoncdc.MustEncode(CadenceUFix64("20.0")))
+		tx.AddRawArgument(jsoncdc.MustEncode(cadence.String(tokenAIdentifier)))
+		tx.AddRawArgument(jsoncdc.MustEncode(cadence.String(tokenBIdentifier)))
+		tx.AddRawArgument(jsoncdc.MustEncode(cadence.Path{Domain: "storage", Identifier: "testTokenAVault"}))
+		tx.AddRawArgument(jsoncdc.MustEncode(cadence.Path{Domain: "storage", Identifier: "testTokenBVault"}))
+		signAndSubmit(
+			t, b, tx,
+			[]flow.Address{
+				b.ServiceKey().Address,
+				newAccountAddr,
+			},
+			[]crypto.Signer{
+				b.ServiceKey().Signer(),
+				newAccountSigner,
+			},
+			false,
+		)
+
+		// Query LPToken balance
+		queryPairBalanceScript := templates.GenerateQueryPairBalance(pairAddrStr, newPairAddrStr)		
+		result = executeScriptAndCheck(t, b, 
+			queryPairBalanceScript,
+			[][]byte{
+				jsoncdc.MustEncode(cadence.Address(flow.HexToAddress(pairAddrStr))),
+				jsoncdc.MustEncode(cadence.Path{Domain: "public", Identifier: "concattokentestBalance"}), // TODO: auto change identifier
+			},
+		)		
+		assertEqual(t, CadenceUFix64("89.99999999"), result)
 	})
 }

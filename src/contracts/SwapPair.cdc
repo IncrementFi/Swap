@@ -115,8 +115,13 @@ pub contract SwapPair: FungibleToken {
                 self.token1Vault.deposit(from: <-tokenAVault)
             }
             // mint initial liquidity token and donate 1e-8 initial minimum liquidity token
-            let initialLpAmount = SwapConfig.sqrt(self.token0Vault.balance) * SwapConfig.sqrt(self.token1Vault.balance)
+            let initialLpAmount = SwapConfig.sqrt2(self.token0Vault.balance) * SwapConfig.sqrt2(self.token1Vault.balance)
             self.donateInitialMinimumLpToken()
+            log(initialLpAmount)
+            log(SwapConfig.ufix64NonZeroMin)
+            var mintAmount = initialLpAmount - SwapConfig.ufix64NonZeroMin
+            log("add liquidity mint amount")
+            log(mintAmount)
             return <-self.mintLpToken(amount: initialLpAmount - SwapConfig.ufix64NonZeroMin)
         } else {
             var percent0 = 0.0
@@ -144,11 +149,15 @@ pub contract SwapPair: FungibleToken {
     pub fun removeLiquidity(lpTokenVault: @FungibleToken.Vault) : @[FungibleToken.Vault] {
         pre {
             lpTokenVault.balance > 0.0 : "SwapPair: removed zero liquidity"
-            lpTokenVault.isInstance(SwapPair.Vault.getType()): "SwapPair: input lpTokenVault type mismatch"
+            // lpTokenVault.getType().isInstance(SwapPair.Vault.getType()): "SwapPair: input lpTokenVault type mismatch"
         }
+        log(lpTokenVault.getType().identifier)
+        log(SwapPair.Vault.getType().identifier)
         //////// TODO: use UFIx64ToUInt256 in division & multiply, or there's precision issues?
         let token0Amount = lpTokenVault.balance / self.totalSupply * self.token0Vault.balance
         let token1Amount = lpTokenVault.balance / self.totalSupply * self.token1Vault.balance
+        log(token0Amount)
+        log(token1Amount)
         let withdrawnToken0 <- self.token0Vault.withdraw(amount: token0Amount)
         let withdrawnToken1 <- self.token1Vault.withdraw(amount: token1Amount)
 
@@ -212,7 +221,7 @@ pub contract SwapPair: FungibleToken {
                 SwapPair.token1Key,
                 SwapPair.token0Vault.balance,
                 SwapPair.token1Vault.balance,
-                SwapPair.account.address,                
+                SwapPair.account.address             
             ]
         }
     }

@@ -93,6 +93,23 @@ pub contract SwapConfig {
         return x1
     }
 
+    pub fun sqrt2(_ y: UFix64): UFix64 {
+        var z = 1.0 as UFix64
+        if (y > 3.0) {
+            z = y
+            var x = y / 2.0 + 1.0 as! UFix64
+            while (x < z) {
+                z = x
+                x = (y / x + x) / 2.0 as! UFix64
+            }
+        } else if (y > 0.0) {
+            z = 1.0 as! UFix64
+        } else {
+            z = 0.0 as! UFix64
+        }
+        return z
+    }
+
     // Helper function:
     // Given pair reserves and the exact input amount of an asset, returns the maximum output amount of the other asset
     pub fun getAmountOut(amountIn: UFix64, reserveIn: UFix64, reserveOut: UFix64): UFix64 {
