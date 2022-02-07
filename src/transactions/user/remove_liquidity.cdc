@@ -14,7 +14,7 @@ transaction(
     prepare(userAccount: AuthAccount) {
         // TODO nil check
         let pairAddr = SwapFactory.getPairAddress(token0Key: token0Key, token1Key: token1Key)!
-        
+        // TODO: make storage path auto-gen
         var vaultStoragePath: StoragePath = /storage/concattokentest
         var lpTokenVaultRef = userAccount.borrow<&SwapPair.Vault>(from: vaultStoragePath)
         var lpTokenVault <- lpTokenVaultRef!.withdraw(amount: lpTokenAmount)        
