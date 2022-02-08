@@ -14,7 +14,7 @@ const (
 	deployPairFileName = "factory/deploy_pair_template.cdc"
 	mintTokensFileName = "test/mint_all_tokens.cdc"
 	addLiquidityFileName = "user/add_liquidity.cdc"
-	removeLiquidityFileName = "user/remove_liquidity.cdc"
+	removeLiquidityFileName = "user/remove_liquidity.cdc"	
 )
 
 

@@ -12,38 +12,43 @@ const (
 	queryPairArrayInfoFileName 			= "query/query_pair_array_info.cdc"
 	queryPairInfoByAddrsFileName 		= "query/query_pair_info_by_addrs.cdc"
 	queryTokenNamesFileName				= "qeury/query_token_names.cdc"
+	testSqrtFileName 					= "test/sqrt_test.cdc"
 )
 
-func GenerateQueryPairAddr(pairAddress string) []byte {
+func GenerateQueryPairAddr(swapCoreAddr string) []byte {
 	code := assets_script.MustAssetString(queryPairAddrFileName)
-	return util.ReplaceImports([]byte(code), pairAddress, "")
+	return util.ReplaceImports([]byte(code), swapCoreAddr, "")
 }
 
-func GenerateQueryPairBalance(pairAddress string, swapPairAddress string) []byte {
+func GenerateQueryPairBalance(swapCoreAddr string, swapPairAddress string) []byte {
 	code := assets_script.MustAssetString(queryPairBalanceFileName)
-	return util.ReplaceImports([]byte(code), pairAddress, swapPairAddress)
+	return util.ReplaceImports([]byte(code), swapCoreAddr, swapPairAddress)
 }
 
-func GenerateQueryPairArrayAddrScript(pairAddress string) []byte {
+func GenerateQueryPairArrayAddrScript(swapCoreAddr string) []byte {
 	code := assets_script.MustAssetString(queryPairArrayAddrFileName)
-	return util.ReplaceImports([]byte(code), pairAddress, "")
+	return util.ReplaceImports([]byte(code), swapCoreAddr, "")
 }
 
-func GenerateQueryPairArrayInfoScript(pairAddress string) []byte {
+func GenerateQueryPairArrayInfoScript(swapCoreAddr string) []byte {
 	code := assets_script.MustAssetString(queryPairArrayInfoFileName)
-	return util.ReplaceImports([]byte(code), pairAddress, "")
+	return util.ReplaceImports([]byte(code), swapCoreAddr, "")
 }
 
-func GenerateQueryPairInfoByAddrsScript(pairAddress string) []byte {
+func GenerateQueryPairInfoByAddrsScript(swapCoreAddr string) []byte {
 	code := assets_script.MustAssetString(queryPairInfoByAddrsFileName)
-	return util.ReplaceImports([]byte(code), pairAddress, "")
+	return util.ReplaceImports([]byte(code), swapCoreAddr, "")
 }
 
-func GenerateQueryTokenNamesScript(pairAddress string) []byte {
+func GenerateQueryTokenNamesScript(swapCoreAddr string) []byte {
 	code := assets_script.MustAssetString(queryTokenNamesFileName)
 	return util.ReplaceImports([]byte(code), "", "")
 }
 
 
+func GenerateTestSqrtScript(swapCoreAddr string) []byte {
+	code := assets_script.MustAsset(testSqrtFileName)
+	return util.ReplaceImports(code, swapCoreAddr, "")
+}
 
 

@@ -8,6 +8,7 @@
 // ../../../src/scripts/query/query_pair_info_by_tokenkey.cdc (202B)
 // ../../../src/scripts/query/query_timestamp.cdc (66B)
 // ../../../src/scripts/query/query_token_names.cdc (1.699kB)
+// ../../../src/scripts/test/sqrt_test.cdc (160B)
 
 package assets_script
 
@@ -237,6 +238,26 @@ func queryQuery_token_namesCdc() (*asset, error) {
 	return a, nil
 }
 
+var _testSqrt_testCdc = "\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xca\xcc\x2d\xc8\x2f\x2a\x51\x08\x2e\x4f\x2c\x70\xce\xcf\x4b\xcb\x4c\x57\x48\x2b\xca\xcf\x55\x50\xd2\xd3\xd3\xd7\xd3\xd3\x4f\xce\xcf\x2b\x29\x4a\x4c\x2e\x29\xd6\x47\x28\xd0\x4b\x4e\x49\x56\xe2\xe2\x2a\x28\x4d\x52\x48\x2b\xcd\x53\xc8\x4d\xcc\xcc\xd3\xc8\xcc\x2b\x28\x2d\xb1\x52\x08\x75\xcb\xac\x30\x33\xd1\xb4\x52\x88\x86\xb0\x62\x15\x14\xaa\xb9\x14\x14\x14\x14\x8a\x52\x4b\x4a\x8b\xf2\x14\xa2\x91\x4c\x29\x2e\x2c\x2a\x81\xe8\xd3\xd4\x51\x40\x13\x37\x82\x4a\xc4\x72\xd5\x02\x02\x00\x00\xff\xff\x86\x4c\x11\xf1\xa0\x00\x00\x00"
+
+func testSqrt_testCdcBytes() ([]byte, error) {
+	return bindataRead(
+		_testSqrt_testCdc,
+		"test/sqrt_test.cdc",
+	)
+}
+
+func testSqrt_testCdc() (*asset, error) {
+	bytes, err := testSqrt_testCdcBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/sqrt_test.cdc", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x70, 0xdb, 0xa3, 0x53, 0xb6, 0x8e, 0xfd, 0xe, 0x7a, 0x3f, 0x5e, 0x76, 0xb5, 0xe3, 0x20, 0xc2, 0xda, 0xdd, 0xab, 0xe4, 0x1e, 0x47, 0xdf, 0x94, 0x2d, 0x69, 0x71, 0xf4, 0x60, 0x61, 0x1e, 0x10}}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -336,6 +357,7 @@ var _bindata = map[string]func() (*asset, error){
 	"query/query_pair_info_by_tokenkey.cdc": queryQuery_pair_info_by_tokenkeyCdc,
 	"query/query_timestamp.cdc":             queryQuery_timestampCdc,
 	"query/query_token_names.cdc":           queryQuery_token_namesCdc,
+	"test/sqrt_test.cdc":                    testSqrt_testCdc,
 }
 
 // AssetDebug is true if the assets were built with the debug flag enabled.
@@ -391,6 +413,9 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"query_pair_info_by_tokenkey.cdc": {queryQuery_pair_info_by_tokenkeyCdc, map[string]*bintree{}},
 		"query_timestamp.cdc": {queryQuery_timestampCdc, map[string]*bintree{}},
 		"query_token_names.cdc": {queryQuery_token_namesCdc, map[string]*bintree{}},
+	}},
+	"test": {nil, map[string]*bintree{
+		"sqrt_test.cdc": {testSqrt_testCdc, map[string]*bintree{}},
 	}},
 }}
 
