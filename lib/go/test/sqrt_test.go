@@ -24,7 +24,6 @@ func TestSqrtContracts(t *testing.T) {
 		[][]byte{
 			jsoncdc.MustEncode(CadenceUFix64("15.00")),
 		},
-	)
-	fmt.Println(jsoncdc.Decode([]byte(result)))
+	)	
 	fmt.Println(fmt.Sprint(result))
 }
