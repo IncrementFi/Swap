@@ -115,7 +115,7 @@ pub contract SwapPair: FungibleToken {
                 self.token1Vault.deposit(from: <-tokenAVault)
             }
             // mint initial liquidity token and donate 1e-8 initial minimum liquidity token
-            let initialLpAmount = SwapConfig.sqrt2(self.token0Vault.balance) * SwapConfig.sqrt2(self.token1Vault.balance)
+            let initialLpAmount = SwapConfig.sqrt(self.token0Vault.balance) * SwapConfig.sqrt(self.token1Vault.balance)
             self.donateInitialMinimumLpToken()
             log(initialLpAmount)
             log(SwapConfig.ufix64NonZeroMin)

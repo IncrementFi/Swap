@@ -28,7 +28,11 @@ pub contract SwapConfig {
         let ufixScaledFractional = (scaled % self.scaleFactor) * UInt256(self.ufixScale) / self.scaleFactor
         return UFix64(integral) + (UFix64(ufixScaledFractional) / self.ufixScale)
     }
-
+    pub fun UInt256ToUFix64(_ scaled: UInt256, _ scaleFactor: UInt256): UFix64 {
+        let integral = scaled / scaleFactor
+        let ufixScaledFractional = (scaled % scaleFactor) * UInt256(self.ufixScale) / scaleFactor
+        return UFix64(integral) + (UFix64(ufixScaledFractional) / self.ufixScale)
+    }
     pub fun UFix64ToUInt256(_ f: UFix64, _ scale: UFix64): UInt256 {
         let integral = UInt256(f)
         let fractional = f % 1.0
@@ -75,39 +79,29 @@ pub contract SwapConfig {
     }
 
     // Helper function:
-    // Compute √a using Newton's method. a ∈ [0.00000001, UFix64.max]
+    // Compute √a using Newton's method. a ∈ [0.00000001, UFix64.max]    
     pub fun sqrt(_ a: UFix64): UFix64 {
-        if (a == 0.0 || a == 1.0) {
-        return a
-        }
-        // scale up 1e8 for floating point number < 1.0 to get rid of precision issues
-        if (a < 1.0) {
-        return self.sqrt(a / self.ufix64NonZeroMin) / 10000.0
-        }
-        var x0 = a
-        var x1 = (a == UFix64.max ? 0.5 * a + 0.5 : 0.5 * (a + 1.0))
-        while ((x0 > x1 && x0 - x1 > self.ufix64NonZeroMin) || (x1 > x0 && x1 - x0 > self.ufix64NonZeroMin)) {
-        x0 = x1
-        x1 = 0.5 * x0 + 0.5 * a / x0
-        }
-        return x1
-    }
-
-    pub fun sqrt2(_ y: UFix64): UFix64 {
-        var z = 1.0 as UFix64
-        if (y > 3.0) {
-            z = y
-            var x = y / 2.0 + 1.0 as! UFix64
-            while (x < z) {
-                z = x
-                x = (y / x + x) / 2.0 as! UFix64
-            }
-        } else if (y > 0.0) {
-            z = 1.0 as! UFix64
+        var z = self.UFix64ToScaledUInt256(1.0)
+        var one = z
+        var y = self.UFix64ToScaledUInt256(a)        
+        var min = self.UFix64ToScaledUInt256(self.ufix64NonZeroMin)
+        if (y > one) {
+            var x0 = y
+            var b = ((a == UFix64.max) ? (self.UFix64ToScaledUInt256(a) / 2 + self.UFix64ToScaledUInt256(0.5)) : 
+            ((self.UFix64ToScaledUInt256(a + 1.0)) / 2))
+            while ((x0 > b + 1) || (b > x0 + 1)) {
+                x0 = b
+                b =  (x0 + y / x0) / 2
+            }            
+            z = b            
+        } else if (y == one) {
+            z = self.UFix64ToUInt256(1.0, 1_000_000_000.0)
+        } else if (y > self.UFix64ToScaledUInt256(0.0)) {            
+            z = self.UFix64ToUInt256(self.sqrt(a / self.ufix64NonZeroMin), 1_000_00.0)            
         } else {
-            z = 0.0 as! UFix64
-        }
-        return z
+            z = 0
+        }        
+        return self.UInt256ToUFix64(z+5, 1_000_000_000)
     }
 
     // Helper function:
