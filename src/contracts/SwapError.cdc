@@ -8,10 +8,7 @@ pub contract SwapError {
         pub case SLIPPAGE_OFFSET_TOO_LARGE
         pub case EXCESSIVE_INPUT_AMOUNT
         pub case EXPIRED
-<<<<<<< HEAD:src/contracts/SwapError.cdc
         pub case INSUFFICIENT_BALANCE
-=======
->>>>>>> 6bba9a0 (add SwapExactTokensForTokens):cadence/contracts/SwapError.cdc
     }
 
     pub fun ErrorEncode(msg: String, err: ErrorCode): String {
