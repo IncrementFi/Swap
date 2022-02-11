@@ -112,7 +112,11 @@ pub contract SwapRouter {
         pre {
             tokenKeyPath.length >= 2: "Invalid path."
         }
+<<<<<<< HEAD:src/contracts/SwapRouter.cdc
         /// Split the loop to reduce gas cost
+=======
+
+>>>>>>> 6bba9a0 (add SwapExactTokensForTokens):cadence/contracts/SwapRouter.cdc
         let vaultOut1 <- self.swapWithOnePair(vaultIn: <- vaultIn, token0Key: tokenKeyPath[0], token1Key: tokenKeyPath[1])
         if tokenKeyPath.length == 2 {
             return <-vaultOut1
