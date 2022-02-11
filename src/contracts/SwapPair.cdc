@@ -212,7 +212,7 @@ pub contract SwapPair: FungibleToken {
                 SwapPair.token1Key,
                 SwapPair.token0Vault.balance,
                 SwapPair.token1Vault.balance,
-                SwapPair.account.address
+                SwapPair.account.address,                
             ]
         }
     }
