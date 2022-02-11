@@ -149,10 +149,8 @@ pub contract SwapPair: FungibleToken {
     pub fun removeLiquidity(lpTokenVault: @FungibleToken.Vault) : @[FungibleToken.Vault] {
         pre {
             lpTokenVault.balance > 0.0 : "SwapPair: removed zero liquidity"
-            // lpTokenVault.getType().isInstance(SwapPair.Vault.getType()): "SwapPair: input lpTokenVault type mismatch"
+            lpTokenVault.getType().identifier == Type<@SwapPair.Vault>().identifier: "SwapPair: input lpTokenVault type mismatch"
         }
-        log(lpTokenVault.getType().identifier)
-        log(SwapPair.Vault.getType().identifier)
         //////// TODO: use UFIx64ToUInt256 in division & multiply, or there's precision issues?
         let token0Amount = lpTokenVault.balance / self.totalSupply * self.token0Vault.balance
         let token1Amount = lpTokenVault.balance / self.totalSupply * self.token1Vault.balance
