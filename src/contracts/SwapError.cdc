@@ -9,6 +9,7 @@ pub contract SwapError {
         pub case EXCESSIVE_INPUT_AMOUNT
         pub case EXPIRED
         pub case INSUFFICIENT_BALANCE
+        pub case MISMATCH_LPTOKEN_VAULT
     }
 
     pub fun ErrorEncode(msg: String, err: ErrorCode): String {

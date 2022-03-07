@@ -1,4 +1,5 @@
 import FungibleToken from 0xFUNGIBLETOKENADDRESS
+import SwapPair from "../../contracts/SwapPair.cdc"
 import SwapPair from 0xSWAPPAIR
 
 pub fun main(account: Address, tokenBalancePath: PublicPath): UFix64 {

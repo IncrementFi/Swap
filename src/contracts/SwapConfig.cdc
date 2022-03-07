@@ -1,6 +1,7 @@
 pub contract SwapConfig {
     pub let PairPublicPath: PublicPath
-
+    pub let LpTokenCollectionStoragePath: StoragePath
+    pub let LpTokenCollectionPublicPath: PublicPath
 
     // Scale factor applied to fixed point number calculation. For example: 1e18 means the actual baseRatePerBlock should
     // be baseRatePerBlock / 1e18. Note: The use of scale factor is due to fixed point number in cadence is only precise to 1e-8:
@@ -115,8 +116,8 @@ pub contract SwapConfig {
         return amountInWithFee * reserveOut / (reserveIn + amountInWithFee)
     }
 
-    // Helper function:
-    // Given pair reserves and the exact output amount of an asset wanted, returns the required (minimum) input amount of the other asset
+    /// Helper function:
+    /// Given pair reserves and the exact output amount of an asset wanted, returns the required (minimum) input amount of the other asset
     pub fun getAmountIn(amountOut: UFix64, reserveIn: UFix64, reserveOut: UFix64): UFix64 {
         pre {
             amountOut < reserveOut: "SwapPair: insufficient output amount"
@@ -125,11 +126,23 @@ pub contract SwapConfig {
         return amountOut * reserveIn / (reserveOut - amountOut) / 0.997
     }
 
+    /// Helper function:
+    /// Given some amount of an asset and pair reserves, returns an equivalent amount of the other asset
+    pub fun quote(amountA: UFix64, reserveA: UFix64, reserveB: UFix64): UFix64 {
+        pre {
+            amountA > 0.0: "SwapPair: insufficient input amount"
+            reserveB > 0.0 && reserveB > 0.0: "SwapPair: insufficient liquidity"
+        }
+        var amountB = amountA * reserveB / reserveA
+        return amountB
+    }
+
 
     init() {
 
         self.PairPublicPath = /public/increment_swap_pair
-
+        self.LpTokenCollectionStoragePath = /storage/increment_swap_lptoken_collection
+        self.LpTokenCollectionPublicPath  = /public/increment_swap_lptoken_collection
         
         // 1e18
         self.scaleFactor = 1_000_000_000_000_000_000

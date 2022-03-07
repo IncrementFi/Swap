@@ -73,7 +73,98 @@ pub contract SwapFactory {
         return pairAddress
     }
     
-    
+    pub fun createEmptyLpTokenCollection(): @LpTokenCollection {
+        return <-create LpTokenCollection()
+    }
+
+    pub resource LpTokenCollection: SwapInterfaces.LpTokenCollectionPublic {
+        access(self) var lpTokenVaults: @{Address: FungibleToken.Vault}
+
+        init() {
+            self.lpTokenVaults <- {}
+        }
+
+        destroy() {
+            destroy self.lpTokenVaults
+        }
+
+        pub fun deposit(pairAddr: Address, lpTokenVault: @FungibleToken.Vault) {
+            let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!
+            assert(
+                lpTokenVault.getType() == pairPublicRef.getLpTokenVaultType(), message:
+                SwapError.ErrorEncode(
+                    msg: "Mis match lptoken vault in deposit",
+                    err: SwapError.ErrorCode.MISMATCH_LPTOKEN_VAULT
+                )
+            )
+
+            if self.lpTokenVaults.containsKey(pairAddr) {
+                let vaultRef = &self.lpTokenVaults[pairAddr] as! &FungibleToken.Vault
+                vaultRef.deposit(from: <- lpTokenVault)
+            } else {
+                self.lpTokenVaults[pairAddr] <-! lpTokenVault
+            }
+        }
+
+        pub fun withdraw(pairAddr: Address, amount: UFix64): @FungibleToken.Vault {
+            pre {
+                self.lpTokenVaults.containsKey(pairAddr):
+                    SwapError.ErrorEncode(
+                        msg: "There is no liquidity in pair ".concat(pairAddr.toString()),
+                        err: SwapError.ErrorCode.INVALID_PARAMETERS
+                    )
+            }
+
+            let vaultRef = &self.lpTokenVaults[pairAddr] as! &FungibleToken.Vault
+            let withdrawVault <- vaultRef.withdraw(amount: amount)
+            if vaultRef.balance == 0.0 {
+                let deletedVault <- self.lpTokenVaults[pairAddr] <- nil
+                destroy deletedVault
+            }
+            return <- withdrawVault
+        }
+
+        pub fun getCollectionLength(): Int {
+            return self.lpTokenVaults.keys.length
+        }
+
+        pub fun getLpTokenBalance(pairAddr: Address): UFix64 {
+            if self.lpTokenVaults.containsKey(pairAddr) {
+                let vaultRef = &self.lpTokenVaults[pairAddr] as! &FungibleToken.Vault
+                return vaultRef.balance
+            }
+            return 0.0
+        }
+
+        pub fun getAllLiquidityPairAddrs(): [Address] {
+            return self.lpTokenVaults.keys
+        }
+
+        pub fun getLiquidityPairAddrsSliced(from: UInt64, to: UInt64): [Address] {
+            pre {
+                from <= to && from < UInt64(self.getCollectionLength()):
+                    SwapError.ErrorEncode(
+                        msg: "Index out of range",
+                        err: SwapError.ErrorCode.INVALID_PARAMETERS
+                    )
+            }
+            let pairLen = UInt64(self.getCollectionLength())
+            var curIndex = from
+            var endIndex = to
+            if endIndex == 0 || endIndex == UInt64.max {
+                endIndex = pairLen - 1
+            }
+
+            // Array.slice function does not sopported now
+            let list: [Address] = []
+            let lpTokenVaultsKeys = self.lpTokenVaults.keys
+            while curIndex <= endIndex && curIndex < pairLen {
+                list.append(lpTokenVaultsKeys[curIndex])
+                curIndex = curIndex + 1
+            }
+            return list
+        }
+    }
     
     pub fun getPairAddress(token0Key: String, token1Key: String): Address? {
         let pairExist0To1 = self.pairMap.containsKey(token0Key) && self.pairMap[token0Key]!.containsKey(token1Key)
@@ -110,12 +201,12 @@ pub contract SwapFactory {
         var curIndex = from
         var endIndex = to
         if endIndex == 0 || endIndex == UInt64.max {
-            endIndex = pairLen
+            endIndex = pairLen-1
         }
 
         // Array.slice function does not sopported now
         let list: [Address] = []
-        while curIndex < endIndex && curIndex < pairLen {
+        while curIndex <= endIndex && curIndex < pairLen {
             list.append(self.pairArr[curIndex])
             curIndex = curIndex + 1
         }

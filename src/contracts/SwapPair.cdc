@@ -154,8 +154,7 @@ pub contract SwapPair: FungibleToken {
         //////// TODO: use UFIx64ToUInt256 in division & multiply, or there's precision issues?
         let token0Amount = lpTokenVault.balance / self.totalSupply * self.token0Vault.balance
         let token1Amount = lpTokenVault.balance / self.totalSupply * self.token1Vault.balance
-        log(token0Amount)
-        log(token1Amount)
+        
         let withdrawnToken0 <- self.token0Vault.withdraw(amount: token0Amount)
         let withdrawnToken1 <- self.token1Vault.withdraw(amount: token1Amount)
 
@@ -219,8 +218,12 @@ pub contract SwapPair: FungibleToken {
                 SwapPair.token1Key,
                 SwapPair.token0Vault.balance,
                 SwapPair.token1Vault.balance,
-                SwapPair.account.address             
+                SwapPair.account.address,
+                SwapPair.totalSupply         
             ]
+        }
+        pub fun getLpTokenVaultType(): Type {
+            return Type<@SwapPair.Vault>()
         }
     }
 

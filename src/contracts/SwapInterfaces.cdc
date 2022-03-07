@@ -11,5 +11,14 @@ pub contract interface SwapInterfaces {
         pub fun getAmountIn(amountOut: UFix64, tokenOutKey: String): UFix64
         pub fun getAmountOut(amountIn: UFix64, tokenInKey: String): UFix64
         pub fun getPairInfo(): [AnyStruct]
+        pub fun getLpTokenVaultType(): Type
+    }
+
+    pub resource interface LpTokenCollectionPublic {
+        pub fun deposit(pairAddr: Address, lpTokenVault: @FungibleToken.Vault)
+        pub fun getCollectionLength(): Int
+        pub fun getLpTokenBalance(pairAddr: Address): UFix64
+        pub fun getAllLiquidityPairAddrs(): [Address]
+        pub fun getLiquidityPairAddrsSliced(from: UInt64, to: UInt64): [Address]
     }
 }

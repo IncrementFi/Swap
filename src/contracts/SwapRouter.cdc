@@ -12,7 +12,7 @@ pub contract SwapRouter {
             tokenKeyPath.length >= 2: "Invalid path."
         }
         var amounts: [UFix64] = []
-        for i in tokenKeyPath {
+        for tokenKey in tokenKeyPath {
             amounts.append(0.0)
         }
         amounts[0] = amountIn
@@ -38,7 +38,7 @@ pub contract SwapRouter {
             tokenKeyPath.length >= 2: "Invalid path."
         }
         var amounts: [UFix64] = []
-        for i in tokenKeyPath {
+        for tokenKey in tokenKeyPath {
             amounts.append(0.0)
         }
         amounts[amounts.length-1] = amountOut
@@ -161,33 +161,5 @@ pub contract SwapRouter {
         
         return <- pairPublicRef.swap(inTokenAVault: <- vaultIn)
     }
-
-    pub fun addLiquidity(
-        tokenAVault: @FungibleToken.Vault,
-        tokenBVault: @FungibleToken.Vault
-    ): @FungibleToken.Vault {
-        let tokenAKey: String = SwapConfig.SliceTokenTypeIdentifierFromVaultType(vaultTypeIdentifier: tokenAVault.getType().identifier)
-        let tokenBKey: String = SwapConfig.SliceTokenTypeIdentifierFromVaultType(vaultTypeIdentifier: tokenBVault.getType().identifier)
-        // TODO nil check
-        let pairAddr = SwapFactory.getPairAddress(token0Key: tokenAKey, token1Key: tokenBKey)!
-        let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!
-        
-        let lpTokenVault <- pairPublicRef.addLiquidity(tokenAVault: <-tokenAVault, tokenBVault: <-tokenBVault)
-
-        return <- lpTokenVault
-    }
-
-
-    pub fun removeLiquidity(
-        lpTokenVault: @FungibleToken.Vault,
-        pairAddr: Address
-    ) : @[FungibleToken.Vault] {
-        
-        // TODO nil check
-        let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!
-        
-        return <- pairPublicRef.removeLiquidity(lpTokenVault: <-lpTokenVault)
-    }
-
 
 }
