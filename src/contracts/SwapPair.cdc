@@ -116,32 +116,48 @@ pub contract SwapPair: FungibleToken {
             }
             // mint initial liquidity token and donate 1e-8 initial minimum liquidity token
             let initialLpAmount = SwapConfig.sqrt(self.token0Vault.balance) * SwapConfig.sqrt(self.token1Vault.balance)
+
             self.donateInitialMinimumLpToken()
-            log(initialLpAmount)
-            log(SwapConfig.ufix64NonZeroMin)
             var mintAmount = initialLpAmount - SwapConfig.ufix64NonZeroMin
-            log("add liquidity mint amount")
-            log(mintAmount)
             return <-self.mintLpToken(amount: initialLpAmount - SwapConfig.ufix64NonZeroMin)
         } else {
-            var percent0 = 0.0
-            var percent1 = 0.0
+            //var percent0 = 0.0
+            //var percent1 = 0.0
+            var lptokenMintAmount0Scaled: UInt256 = 0
+            var lptokenMintAmount1Scaled: UInt256 = 0
+            /// Use UFIx64ToUInt256 in division & multiply to solve precision issues
+            let reserve0AmountScaled = SwapConfig.UFix64ToScaledUInt256(self.token0Vault.balance)
+            let reserve1AmountScaled = SwapConfig.UFix64ToScaledUInt256(self.token1Vault.balance)
+            let inAmountAScaled = SwapConfig.UFix64ToScaledUInt256(tokenAVault.balance)
+            let inAmountBScaled = SwapConfig.UFix64ToScaledUInt256(tokenBVault.balance)
+
+            let totalSupplyScaled = SwapConfig.UFix64ToScaledUInt256(self.totalSupply)
+
             if (tokenAVault.isInstance(self.token0VaultType)) {
-                percent0 = tokenAVault.balance / self.token0Vault.balance
-                percent1 = tokenBVault.balance / self.token1Vault.balance
+                //percent0 = tokenAVault.balance / self.token0Vault.balance
+                //percent1 = tokenBVault.balance / self.token1Vault.balance
+
+                lptokenMintAmount0Scaled = inAmountAScaled * totalSupplyScaled / reserve0AmountScaled
+                lptokenMintAmount1Scaled = inAmountBScaled * totalSupplyScaled / reserve1AmountScaled
+                
                 self.token0Vault.deposit(from: <-tokenAVault)
                 self.token1Vault.deposit(from: <-tokenBVault)
             } else {
-                percent0 = tokenBVault.balance / self.token0Vault.balance
-                percent1 = tokenAVault.balance / self.token1Vault.balance
+                //percent0 = tokenBVault.balance / self.token0Vault.balance
+                //percent1 = tokenAVault.balance / self.token1Vault.balance
+
+                lptokenMintAmount0Scaled = inAmountBScaled * totalSupplyScaled / reserve0AmountScaled
+                lptokenMintAmount1Scaled = inAmountAScaled * totalSupplyScaled / reserve1AmountScaled
+
                 self.token0Vault.deposit(from: <-tokenBVault)
                 self.token1Vault.deposit(from: <-tokenAVault)
             }
+
             // Note: User should add proportional liquidity as any extra is added into pool.
-            let liquidityPercent = percent0 < percent1 ? percent0 : percent1
+            let mintLptokenAmountScaled = lptokenMintAmount0Scaled < lptokenMintAmount1Scaled ? lptokenMintAmount0Scaled : lptokenMintAmount1Scaled
+            
             // mint liquidity token pro rata
-            //////// TODO: percent multiply here might have truncation / precision issues...
-            return <-self.mintLpToken(amount: liquidityPercent * self.totalSupply)
+            return <-self.mintLpToken(amount: SwapConfig.ScaledUInt256ToUFix64(mintLptokenAmountScaled))
         }
     }
 
@@ -151,10 +167,16 @@ pub contract SwapPair: FungibleToken {
             lpTokenVault.balance > 0.0 : "SwapPair: removed zero liquidity"
             lpTokenVault.getType().identifier == Type<@SwapPair.Vault>().identifier: "SwapPair: input lpTokenVault type mismatch"
         }
-        //////// TODO: use UFIx64ToUInt256 in division & multiply, or there's precision issues?
-        let token0Amount = lpTokenVault.balance / self.totalSupply * self.token0Vault.balance
-        let token1Amount = lpTokenVault.balance / self.totalSupply * self.token1Vault.balance
-        
+        /// Use UFIx64ToUInt256 in division & multiply to solve precision issues
+        let removeAmountScaled = SwapConfig.UFix64ToScaledUInt256(lpTokenVault.balance)
+        let totalSupplyScaled = SwapConfig.UFix64ToScaledUInt256(self.totalSupply)
+        let reserve0AmountScaled = SwapConfig.UFix64ToScaledUInt256(self.token0Vault.balance)
+        let reserve1AmountScaled = SwapConfig.UFix64ToScaledUInt256(self.token1Vault.balance)
+        let token0AmountScaled = removeAmountScaled * reserve0AmountScaled / totalSupplyScaled
+        let token1AmountScaled = removeAmountScaled * reserve1AmountScaled / totalSupplyScaled
+        let token0Amount = SwapConfig.ScaledUInt256ToUFix64(token0AmountScaled)
+        let token1Amount = SwapConfig.ScaledUInt256ToUFix64(token1AmountScaled)
+
         let withdrawnToken0 <- self.token0Vault.withdraw(amount: token0Amount)
         let withdrawnToken1 <- self.token1Vault.withdraw(amount: token1Amount)
 
@@ -231,8 +253,6 @@ pub contract SwapPair: FungibleToken {
         
         self.totalSupply = 0.0
 
-        // TODO need sort??
-        //let sortedTypes = SwapPair.sortTokens(inTokenAVaultType, inTokenBVaultType)
         self.token0VaultType = token0Vault.getType()
         self.token1VaultType = token1Vault.getType()
         self.token0Vault <- token0Vault

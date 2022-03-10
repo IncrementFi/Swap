@@ -73,10 +73,12 @@ pub contract SwapFactory {
         return pairAddress
     }
     
+    ///
     pub fun createEmptyLpTokenCollection(): @LpTokenCollection {
         return <-create LpTokenCollection()
     }
 
+    ///
     pub resource LpTokenCollection: SwapInterfaces.LpTokenCollectionPublic {
         access(self) var lpTokenVaults: @{Address: FungibleToken.Vault}
 

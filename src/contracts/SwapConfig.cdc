@@ -29,42 +29,17 @@ pub contract SwapConfig {
         let ufixScaledFractional = (scaled % self.scaleFactor) * UInt256(self.ufixScale) / self.scaleFactor
         return UFix64(integral) + (UFix64(ufixScaledFractional) / self.ufixScale)
     }
+
     pub fun UInt256ToUFix64(_ scaled: UInt256, _ scaleFactor: UInt256): UFix64 {
         let integral = scaled / scaleFactor
         let ufixScaledFractional = (scaled % scaleFactor) * UInt256(self.ufixScale) / scaleFactor
         return UFix64(integral) + (UFix64(ufixScaledFractional) / self.ufixScale)
     }
+    
     pub fun UFix64ToUInt256(_ f: UFix64, _ scale: UFix64): UInt256 {
         let integral = UInt256(f)
         let fractional = f % 1.0
         return integral * UInt256(scale) + UInt256(fractional * scale)
-    }
-
-    // Helper function:
-    // Returns Types sorted by VaultType.identifier
-    pub fun sortTokens(_ inTokenAVaultType: Type, _ inTokenBVaultType: Type): [Type; 2] {
-        let tokenAString = inTokenAVaultType.identifier.slice(from: 2, upTo: inTokenAVaultType.identifier.length - 6)
-        let tokenBString = inTokenBVaultType.identifier.slice(from: 2, upTo: inTokenBVaultType.identifier.length - 6)
-        let tokenAUtf8 = tokenAString.utf8
-        let tokenBUtf8 = tokenBString.utf8
-        let len = tokenAUtf8.length < tokenBUtf8.length ? tokenAUtf8.length : tokenBUtf8.length
-        var i = 0;
-        while (i < len) {
-            if (tokenAUtf8[i] == tokenBUtf8[i]) {
-                i = i + 1
-            } else if (tokenAUtf8[i] < tokenBUtf8[i]) {
-                return [inTokenAVaultType, inTokenBVaultType]
-            } else {
-                return [inTokenBVaultType, inTokenAVaultType]
-            }
-        }
-        if (i < tokenAUtf8.length) {
-            return [inTokenBVaultType, inTokenAVaultType]
-        } else if (i < tokenBUtf8.length) {
-            return [inTokenAVaultType, inTokenBVaultType]
-        } else {
-            return [inTokenAVaultType, inTokenBVaultType]
-        }
     }
 
     /// SliceTokenTypeIdentifierFromVaultType
@@ -80,7 +55,7 @@ pub contract SwapConfig {
     }
 
     // Helper function:
-    // Compute √a using Newton's method. a ∈ [0.00000001, UFix64.max]    
+    // Compute √a using Newton's method. a ∈ [0.00000001, UFix64.max]
     pub fun sqrt(_ a: UFix64): UFix64 {
         var z = self.UFix64ToScaledUInt256(1.0)
         var one = z
@@ -112,8 +87,14 @@ pub contract SwapConfig {
             amountIn > 0.0: "SwapPair: insufficient input amount"
             reserveIn > 0.0 && reserveOut > 0.0: "SwapPair: insufficient liquidity"
         }
-        let amountInWithFee = 0.997 * amountIn
-        return amountInWithFee * reserveOut / (reserveIn + amountInWithFee)
+        let amountInScaled = SwapConfig.UFix64ToScaledUInt256(amountIn)
+        let reserveInScaled = SwapConfig.UFix64ToScaledUInt256(reserveIn)
+        let reserveOutScaled = SwapConfig.UFix64ToScaledUInt256(reserveOut)
+
+        let amountInWithFeeScaled = SwapConfig.UFix64ToScaledUInt256(0.997) * amountInScaled / SwapConfig.scaleFactor
+
+        let amountOutScaled = amountInWithFeeScaled * reserveOutScaled / (reserveInScaled + amountInWithFeeScaled)
+        return SwapConfig.ScaledUInt256ToUFix64(amountOutScaled)
     }
 
     /// Helper function:
@@ -123,7 +104,12 @@ pub contract SwapConfig {
             amountOut < reserveOut: "SwapPair: insufficient output amount"
             reserveIn > 0.0 && reserveOut > 0.0: "SwapPair: insufficient liquidity"
         }
-        return amountOut * reserveIn / (reserveOut - amountOut) / 0.997
+        let amountOutScaled = SwapConfig.UFix64ToScaledUInt256(amountOut)
+        let reserveInScaled = SwapConfig.UFix64ToScaledUInt256(reserveIn)
+        let reserveOutScaled = SwapConfig.UFix64ToScaledUInt256(reserveOut)
+
+        let amountInScaled = amountOutScaled * reserveInScaled / (reserveOutScaled - amountOutScaled) * SwapConfig.scaleFactor / SwapConfig.UFix64ToScaledUInt256(0.997)
+        return SwapConfig.ScaledUInt256ToUFix64(amountInScaled)
     }
 
     /// Helper function:
@@ -133,8 +119,12 @@ pub contract SwapConfig {
             amountA > 0.0: "SwapPair: insufficient input amount"
             reserveB > 0.0 && reserveB > 0.0: "SwapPair: insufficient liquidity"
         }
-        var amountB = amountA * reserveB / reserveA
-        return amountB
+        let amountAScaled = SwapConfig.UFix64ToScaledUInt256(amountA)
+        let reserveAScaled = SwapConfig.UFix64ToScaledUInt256(reserveA)
+        let reserveBScaled = SwapConfig.UFix64ToScaledUInt256(reserveB)
+
+        var amountBScaled = amountAScaled * reserveBScaled / reserveAScaled
+        return SwapConfig.ScaledUInt256ToUFix64(amountBScaled)
     }
 
 
