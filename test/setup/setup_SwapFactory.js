@@ -12,15 +12,6 @@ import {
 import {
     getTokenKeyByName
 } from "./setup_Tokens"
-/*
-export const getSwapConfigAddress = async () => { return await getSwapConfigDeployerAddress() }
-export const getSwapInterfacesAddress = async () => { return await getSwapConfigDeployerAddress() }
-export const getSwapErrorAddress = async () => { return await getSwapConfigDeployerAddress() }
-
-export const getSwapFactoryAddress = async () => { return await getSwapFactoryDeployerAddress() }
-export const getSwapRouterAddress = async () => { return await getSwapFactoryDeployerAddress() }
-export const getSwapPairTemplateAddress = async () => { return await getSwapPairTemplateDeployerAddress() }
-*/
 
 /**
  * Create Pair

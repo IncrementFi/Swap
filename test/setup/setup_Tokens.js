@@ -76,6 +76,11 @@ export const getBalanceByName = async (tokenName, userAddr) => {
     return executeScript({ code, args });
 }
 
+export const getTokenAddrByName = async (tokenName) => {
+    if (tokenName == "FlowToken") return "0x0ae53cb6e3f42a79"
+    return await getTestTokenDeployerAddress()
+}
+
 export const getTokenKeyByName = async (tokenName) => {
     let testTokenAddr = await getTestTokenDeployerAddress()
     let flowTokenAddr = "0x0ae53cb6e3f42a79"
