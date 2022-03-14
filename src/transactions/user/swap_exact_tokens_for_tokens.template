@@ -53,7 +53,7 @@ transaction(
 
                 let tokenInVault <- userAccount.borrow<&FungibleToken.Vault>(from: tokenInVaultPath)!.withdraw(amount: tokenInAmount)
 
-                let tokenOutVault <- SwapRouter.swap(vaultIn: <- tokenInVault, tokenKeyPath: path)
+                let tokenOutVault <- SwapRouter.swapWithPath(vaultIn: <- tokenInVault, tokenKeyPath: path, exactAmounts: nil)
 
                 log("out ".concat(tokenOutVault.balance.toString()))
 
@@ -71,7 +71,7 @@ transaction(
 
         assert( tokenOutAmountTotal >= amountOutMin, message:
             SwapError.ErrorEncode(
-                msg: "INSUFFICIENT_OUTPUT_AMOUNT expect min ".concat(amountOutMin.toString()).concat(" got ").concat(tokenOutAmountTotal.toString()),
+                msg: "SLIPPAGE_OFFSET_TOO_LARGE expect min ".concat(amountOutMin.toString()).concat(" got ").concat(tokenOutAmountTotal.toString()),
                 err: SwapError.ErrorCode.SLIPPAGE_OFFSET_TOO_LARGE
             )
         )

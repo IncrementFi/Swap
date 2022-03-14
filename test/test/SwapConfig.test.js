@@ -28,7 +28,7 @@ describe("SwapConfig Testsuites", () => {
     afterEach(async () => {
         return emulator.stop();
     });
-    
+    /*
     it("Test sqrt", async () => {
         await deployConfigContract();
         expect(
@@ -166,5 +166,23 @@ describe("SwapConfig Testsuites", () => {
         ).toBe(
             "0.00014858"
         );
+    });
+    */
+
+    it("Test getAmountIn", async () => {
+        await deployConfigContract();
+        var reserveIn = 999.0
+        var reserveOut = 100999.0
+        var amountIn = 0.0
+        var amountOut = 95.0
+        amountIn = (await getAmountIn(amountOut, reserveIn, reserveOut))[0]
+        amountIn = 0.94337758
+        console.log('estimated in', amountIn)
+        console.log('   js:', amountOut * reserveIn / (reserveOut - amountOut) / 0.997)
+        console.log('real out', (await getAmountOut(amountIn, reserveIn, reserveOut))[0] )
+        //amountIn = 0.9930782446348948
+
+        console.log('   js:', 0.997 * amountIn * reserveOut / (reserveIn + 0.997 * amountIn))
+        console.log('want out', amountOut)
     });
 });

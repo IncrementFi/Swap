@@ -68,7 +68,7 @@ pub contract SwapRouter {
         let amounts = self.getAmountsOut(amountIn: vaultIn.balance, tokenKeyPath: tokenKeyPath)
         assert( amounts[amounts.length-1] >= amountOutMin, message:
             SwapError.ErrorEncode(
-                msg: "INSUFFICIENT_OUTPUT_AMOUNT",
+                msg: "SLIPPAGE_OFFSET_TOO_LARGE",
                 err: SwapError.ErrorCode.SLIPPAGE_OFFSET_TOO_LARGE
             )
         )
@@ -79,7 +79,7 @@ pub contract SwapRouter {
             )
         )
         
-        return <- self.swap(vaultIn: <-vaultIn, tokenKeyPath: tokenKeyPath)
+        return <- self.swapWithPath(vaultIn: <-vaultIn, tokenKeyPath: tokenKeyPath, exactAmounts: nil)
     }
 
     pub fun swapTokensForExactTokens(
@@ -92,8 +92,8 @@ pub contract SwapRouter {
         let amounts = self.getAmountsIn(amountOut: amountOut, tokenKeyPath: tokenKeyPath)
         assert( amounts[0] <= amountInMax, message:
             SwapError.ErrorEncode(
-                msg: "EXCESSIVE_INPUT_AMOUNT",
-                err: SwapError.ErrorCode.EXCESSIVE_INPUT_AMOUNT
+                msg: "SLIPPAGE_OFFSET_TOO_LARGE",
+                err: SwapError.ErrorCode.SLIPPAGE_OFFSET_TOO_LARGE
             )
         )
         assert( deadline >= getCurrentBlock().timestamp, message:
@@ -105,30 +105,38 @@ pub contract SwapRouter {
         
         let vaultInExact <- vaultIn.withdraw(amount: amounts[0])
 
-        return <-[<-self.swap(vaultIn: <-vaultInExact, tokenKeyPath: tokenKeyPath), <-vaultIn]
+        return <-[<-self.swapWithPath(vaultIn: <-vaultInExact, tokenKeyPath: tokenKeyPath, exactAmounts: amounts), <-vaultIn]
     }
 
-    pub fun swap(vaultIn: @FungibleToken.Vault, tokenKeyPath: [String]): @FungibleToken.Vault {
+    pub fun swapWithPath(vaultIn: @FungibleToken.Vault, tokenKeyPath: [String], exactAmounts: [UFix64]?): @FungibleToken.Vault {
         pre {
             tokenKeyPath.length >= 2: "Invalid path."
         }
         /// Split the loop to reduce gas cost
-        let vaultOut1 <- self.swapWithOnePair(vaultIn: <- vaultIn, token0Key: tokenKeyPath[0], token1Key: tokenKeyPath[1])
+        var exactAmountOut1: UFix64? = nil
+        if exactAmounts != nil { exactAmountOut1 = exactAmounts![1] }
+        let vaultOut1 <- self.swapWithPair(vaultIn: <- vaultIn, exactAmountOut: exactAmountOut1, token0Key: tokenKeyPath[0], token1Key: tokenKeyPath[1])
         if tokenKeyPath.length == 2 {
             return <-vaultOut1
         }
 
-        let vaultOut2 <- self.swapWithOnePair(vaultIn: <- vaultOut1, token0Key: tokenKeyPath[1], token1Key: tokenKeyPath[2])
+        var exactAmountOut2: UFix64? = nil
+        if exactAmounts != nil { exactAmountOut2 = exactAmounts![2] }
+        let vaultOut2 <- self.swapWithPair(vaultIn: <- vaultOut1, exactAmountOut: exactAmountOut2, token0Key: tokenKeyPath[1], token1Key: tokenKeyPath[2])
         if tokenKeyPath.length == 3 {
             return <-vaultOut2
         }
 
-        let vaultOut3 <- self.swapWithOnePair(vaultIn: <- vaultOut2, token0Key: tokenKeyPath[2], token1Key: tokenKeyPath[3])
+        var exactAmountOut3: UFix64? = nil
+        if exactAmounts != nil { exactAmountOut3 = exactAmounts![3] }
+        let vaultOut3 <- self.swapWithPair(vaultIn: <- vaultOut2, exactAmountOut: exactAmountOut3, token0Key: tokenKeyPath[2], token1Key: tokenKeyPath[3])
         if tokenKeyPath.length == 4 {
             return <-vaultOut3
         }
 
-        let vaultOut4 <- self.swapWithOnePair(vaultIn: <- vaultOut3, token0Key: tokenKeyPath[3], token1Key: tokenKeyPath[4])
+        var exactAmountOut4: UFix64? = nil
+        if exactAmounts != nil { exactAmountOut4 = exactAmounts![4] }
+        let vaultOut4 <- self.swapWithPair(vaultIn: <- vaultOut3, exactAmountOut: exactAmountOut4, token0Key: tokenKeyPath[3], token1Key: tokenKeyPath[4])
         if tokenKeyPath.length == 5 {
             return <-vaultOut4
         }
@@ -138,7 +146,9 @@ pub contract SwapRouter {
         while(index < tokenKeyPath.length-1) {
             var in <- curVaultOut.withdraw(amount: curVaultOut.balance)
             
-            var out <- self.swapWithOnePair(vaultIn: <- in, token0Key: tokenKeyPath[index], token1Key:tokenKeyPath[index+1])
+            var exactAmountOut: UFix64? = nil
+            if exactAmounts != nil { exactAmountOut = exactAmounts![index+1] }
+            var out <- self.swapWithPair(vaultIn: <- in, exactAmountOut: exactAmountOut, token0Key: tokenKeyPath[index], token1Key:tokenKeyPath[index+1])
             curVaultOut <-> out
 
             destroy out
@@ -149,17 +159,17 @@ pub contract SwapRouter {
         return <-curVaultOut
     }
 
-
     /// one to one
-    pub fun swapWithOnePair(
+    pub fun swapWithPair(
         vaultIn: @FungibleToken.Vault,
+        exactAmountOut: UFix64?,
         token0Key: String,
         token1Key: String
     ): @FungibleToken.Vault {
         let pairAddr = SwapFactory.getPairAddress(token0Key: token0Key, token1Key: token1Key)!
         let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!
-        
-        return <- pairPublicRef.swap(inTokenAVault: <- vaultIn)
+
+        return <- pairPublicRef.swap(vaultIn: <- vaultIn, exactAmountOut: exactAmountOut)
     }
 
 }

@@ -168,7 +168,7 @@ describe("Swap Pair Testsuites", () => {
         )
     });
     
-
+    
     it("Swap Tokens for Exact Tokens - one swap", async () => {
         const liquidityProvider = await getAccountAddress("liquidityProvider");
         const trader = await getAccountAddress("trader");
@@ -181,7 +181,7 @@ describe("Swap Pair Testsuites", () => {
         await mintTokenByName(tokenName0, liquidityProvider, "15000000.0");
         await mintTokenByName(tokenName1, liquidityProvider, "15000000.0");
         await mintTokenByName(tokenName0, trader, "15.0");
-        //await mintTokenByName(tokenName1, userAddr1, "10.0");
+
         
         await createPair(tokenName0, tokenName1);
 
@@ -197,7 +197,7 @@ describe("Swap Pair Testsuites", () => {
         let swapRes = await swapTokensForExactTokens(
             trader,
             [tokenName0, tokenName1],
-            ["6.0"],
+            ["5.12345678"],
             "99999.0",
             "500.0"
         )
@@ -215,7 +215,7 @@ describe("Swap Pair Testsuites", () => {
         expect(
             (await getBalanceByName(tokenName1, trader))[0]
         ).toBe(
-            "5.99999999"
+            "5.12345678"
         )
     });
 });

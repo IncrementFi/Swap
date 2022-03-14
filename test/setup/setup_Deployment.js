@@ -71,6 +71,7 @@ export const deploySwapPairTemplate = async () => {
     code = code.replaceAll("\"./tokens/FungibleToken.cdc\"", "0xee82856bf20e2aa6")
     code = code.replaceAll("\"./SwapInterfaces.cdc\"", swapInterfacesAddr)
     code = code.replaceAll("\"./SwapConfig.cdc\"", swapConfigAddr)
+    code = code.replaceAll("\"./SwapError.cdc\"", swapConfigAddr)
     
     const name = "factory/deploy_pair_template";
 

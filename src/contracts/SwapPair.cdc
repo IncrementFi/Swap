@@ -1,6 +1,7 @@
 import FungibleToken from "./tokens/FungibleToken.cdc"
 import SwapInterfaces from "./SwapInterfaces.cdc"
 import SwapConfig from "./SwapConfig.cdc"
+import SwapError from "./SwapError.cdc"
 
 
 ///// TODO: reentrant-attack check
@@ -184,32 +185,42 @@ pub contract SwapPair: FungibleToken {
         return <- [<-withdrawnToken0, <-withdrawnToken1]
     }
 
-    pub fun swap(inTokenAVault: @FungibleToken.Vault): @FungibleToken.Vault {
+    pub fun swap(vaultIn: @FungibleToken.Vault, exactAmountOut: UFix64?): @FungibleToken.Vault {
         pre {
-            inTokenAVault.balance > 0.0: "SwapPair: zero in balance"
-            inTokenAVault.isInstance(self.token0VaultType) || inTokenAVault.isInstance(self.token1VaultType): "SwapPair: incompatible in token vault"
+            vaultIn.balance > 0.0: "SwapPair: zero in balance"
+            vaultIn.isInstance(self.token0VaultType) || vaultIn.isInstance(self.token1VaultType): "SwapPair: incompatible in token vault"
         }
         var amountOut = 0.0
-        if (inTokenAVault.isInstance(self.token0VaultType)) {
-            amountOut = SwapConfig.getAmountOut(amountIn: inTokenAVault.balance, reserveIn: self.token0Vault.balance, reserveOut: self.token1Vault.balance)
+        if (vaultIn.isInstance(self.token0VaultType)) {
+            amountOut = SwapConfig.getAmountOut(amountIn: vaultIn.balance, reserveIn: self.token0Vault.balance, reserveOut: self.token1Vault.balance)
         } else {
-            amountOut = SwapConfig.getAmountOut(amountIn: inTokenAVault.balance, reserveIn: self.token1Vault.balance, reserveOut: self.token0Vault.balance)
+            amountOut = SwapConfig.getAmountOut(amountIn: vaultIn.balance, reserveIn: self.token1Vault.balance, reserveOut: self.token0Vault.balance)
+        }
+        //
+        if exactAmountOut != nil {
+            assert(amountOut >= exactAmountOut!, message:
+                SwapError.ErrorEncode(
+                    msg: "EXCESSIVE_INPUT_AMOUNT",
+                    err: SwapError.ErrorCode.EXCESSIVE_INPUT_AMOUNT
+                )
+            )
+            amountOut = exactAmountOut!
         }
 
-        if (inTokenAVault.isInstance(self.token0VaultType)) {
-            emit Swap(inTokenAmount: inTokenAVault.balance, outTokenAmount: amountOut, direction: 0)
-            self.token0Vault.deposit(from: <-inTokenAVault)
+        if (vaultIn.isInstance(self.token0VaultType)) {
+            emit Swap(inTokenAmount: vaultIn.balance, outTokenAmount: amountOut, direction: 0)
+            self.token0Vault.deposit(from: <-vaultIn)
             return <- self.token1Vault.withdraw(amount: amountOut)
         } else {
-            emit Swap(inTokenAmount: inTokenAVault.balance, outTokenAmount: amountOut, direction: 1)
-            self.token1Vault.deposit(from: <-inTokenAVault)
+            emit Swap(inTokenAmount: vaultIn.balance, outTokenAmount: amountOut, direction: 1)
+            self.token1Vault.deposit(from: <-vaultIn)
             return <- self.token0Vault.withdraw(amount: amountOut)
         }
     }
 
     pub resource PairPublic: SwapInterfaces.PairPublic {
-        pub fun swap(inTokenAVault: @FungibleToken.Vault): @FungibleToken.Vault {
-            return <- SwapPair.swap(inTokenAVault: <-inTokenAVault)
+        pub fun swap(vaultIn: @FungibleToken.Vault, exactAmountOut: UFix64?): @FungibleToken.Vault {
+            return <- SwapPair.swap(vaultIn: <-vaultIn, exactAmountOut: exactAmountOut)
         }
 
         pub fun removeLiquidity(lpTokenVault: @FungibleToken.Vault) : @[FungibleToken.Vault] {

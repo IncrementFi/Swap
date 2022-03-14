@@ -109,7 +109,7 @@ pub contract SwapConfig {
         let reserveOutScaled = SwapConfig.UFix64ToScaledUInt256(reserveOut)
 
         let amountInScaled = amountOutScaled * reserveInScaled / (reserveOutScaled - amountOutScaled) * SwapConfig.scaleFactor / SwapConfig.UFix64ToScaledUInt256(0.997)
-        return SwapConfig.ScaledUInt256ToUFix64(amountInScaled)
+        return SwapConfig.ScaledUInt256ToUFix64(amountInScaled) + SwapConfig.ufix64NonZeroMin
     }
 
     /// Helper function:

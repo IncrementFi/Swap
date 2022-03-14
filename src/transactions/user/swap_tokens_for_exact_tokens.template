@@ -59,7 +59,7 @@ transaction(
 
                 let tokenInVault <- userAccount.borrow<&FungibleToken.Vault>(from: tokenInVaultPath)!.withdraw(amount: tokenInAmount)
 
-                let tokenOutVault <- SwapRouter.swap(vaultIn: <- tokenInVault, tokenKeyPath: path)
+                let tokenOutVault <- SwapRouter.swapWithPath(vaultIn: <- tokenInVault, tokenKeyPath: path, exactAmounts: amounts)
 
                 log("out ".concat(tokenOutVault.balance.toString()))
 
@@ -77,8 +77,8 @@ transaction(
 
         assert( amountInTotal <= amountInMax, message:
             SwapError.ErrorEncode(
-                msg: "EXCESSIVE_INPUT_AMOUNT",
-                err: SwapError.ErrorCode.EXCESSIVE_INPUT_AMOUNT
+                msg: "SLIPPAGE_OFFSET_TOO_LARGE",
+                err: SwapError.ErrorCode.SLIPPAGE_OFFSET_TOO_LARGE
             )
         )
 
