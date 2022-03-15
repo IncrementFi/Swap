@@ -6,7 +6,7 @@ import SwapInterfaces from "./SwapInterfaces.cdc"
 
 pub contract SwapFactory {
     // Account which has deployed pair template contract
-    pub let pairContractTemplateAddress: Address
+    pub var pairContractTemplateAddress: Address
 
     access(self) let pairArr: [Address]
     // pairMap[token0Identifier][token1Identifier] == pairMap[token1Identifier][token0Identifier]
@@ -15,14 +15,13 @@ pub contract SwapFactory {
     /// Events
     pub event PairCreated(token0Key: String, token1Key: String, pairAddress: Address, numPairs: Int)
 
-    
-  ////// TODO:
-//  pub fun feeTo(): Address?
-//  pub fun feeToSetter(): Address?
-//  pub fun setFeeTo(feeTo: Address)
-//  pub fun setFeeToSetter(feeToSetter: Address)
+    pub var feeTo: Address?
 
-    pub fun createPair(token0Vault: @FungibleToken.Vault, token1Vault: @FungibleToken.Vault): Address {
+    /// Reserved parameter fields: {ParamName: Value}
+    access(self) let _reservedFields: {String: AnyStruct}
+
+
+    pub fun createPair(token0Vault: @FungibleToken.Vault, token1Vault: @FungibleToken.Vault, storageFeeVault: @FungibleToken.Vault?): Address {
         // The tokenKey is the type identifier of the token, eg A.f8d6e0586b0a20c7.FlowToken
         let token0Key = SwapConfig.SliceTokenTypeIdentifierFromVaultType(vaultTypeIdentifier: token0Vault.getType().identifier)
         let token1Key = SwapConfig.SliceTokenTypeIdentifierFromVaultType(vaultTypeIdentifier: token1Vault.getType().identifier)
@@ -43,6 +42,12 @@ pub contract SwapFactory {
 
         let pairAccount = AuthAccount(payer: self.account)
         let pairAddress = pairAccount.address
+        // Add initial flow tokens for deployment
+        if storageFeeVault != nil {
+            pairAccount.getCapability(/public/flowTokenReceiver).borrow<&{FungibleToken.Receiver}>()!.deposit(from: <-storageFeeVault!)
+        } else {
+            destroy storageFeeVault
+        }
 
         let pairTemplateContract = getAccount(self.pairContractTemplateAddress).contracts.get(name: "SwapPair")!
         // Deploy pair contract with initialized parameters
@@ -230,11 +235,23 @@ pub contract SwapFactory {
         return res
     }
 
-
+    pub resource Admin {
+        pub fun setPairContractTemplateAddress(newAddr: Address) {
+            SwapFactory.pairContractTemplateAddress = newAddr
+        }
+        pub fun setFeeTo(feeToAddr: Address) {
+            SwapFactory.feeTo = feeToAddr
+        }
+    }
 
     init(pairTemplate: Address) {
         self.pairContractTemplateAddress = pairTemplate
         self.pairArr = []
         self.pairMap = {}
+        self.feeTo = nil
+        self._reservedFields = {}
+
+        destroy <-self.account.load<@AnyResource>(from: /storage/swapFactoryAdmin)
+        self.account.save(<-create Admin(), to: /storage/swapFactoryAdmin)
     }
 }

@@ -71,8 +71,8 @@ pub contract FixedWindowOracleExample {
         let reserve0Scaled = SwapConfig.UFix64ToScaledUInt256(reserve0)
         let reserve1Scaled = SwapConfig.UFix64ToScaledUInt256(reserve1)
 
-        let currentPrice0CumulativeScaled: UInt256 = price0CumulativeLastScaled
-        let currentPrice1CumulativeScaled: UInt256 = price1CumulativeLastScaled
+        var currentPrice0CumulativeScaled: UInt256 = price0CumulativeLastScaled
+        var currentPrice1CumulativeScaled: UInt256 = price1CumulativeLastScaled
         if (blockTimestampLast != currentBlockTimestamp) {
             let timeElapsed = currentBlockTimestamp - blockTimestampLast
             let timeElapsedScaled = SwapConfig.UFix64ToScaledUInt256(timeElapsed)
@@ -106,6 +106,7 @@ pub contract FixedWindowOracleExample {
         self.blockTimestampLast = currentBlockTimestamp
     }
 
+    ///
     pub fun quote(tokenKey: String): UFix64 {
         if tokenKey == self.token0Key {
             return self.price0Average

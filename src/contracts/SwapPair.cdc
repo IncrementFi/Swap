@@ -2,6 +2,7 @@ import FungibleToken from "./tokens/FungibleToken.cdc"
 import SwapInterfaces from "./SwapInterfaces.cdc"
 import SwapConfig from "./SwapConfig.cdc"
 import SwapError from "./SwapError.cdc"
+import SwapFactory from "./SwapFactory.cdc"
 
 
 ///// TODO: reentrant-attack check
@@ -20,6 +21,12 @@ pub contract SwapPair: FungibleToken {
     pub var price0CumulativeLastScaled: UInt256
     pub var price1CumulativeLastScaled: UInt256
 
+    access(self) var lock: Bool
+    
+    pub var rootKLast: UFix64
+
+    /// Reserved parameter fields: {ParamName: Value}
+    access(self) let _reservedFields: {String: AnyStruct}
 
     // Event that is emitted when the contract is created
     pub event TokensInitialized(initialSupply: UFix64)
@@ -104,37 +111,26 @@ pub contract SwapPair: FungibleToken {
         emit TokensBurned(amount: amount)
     }
 
-    access(self) fun _mintFee(reserve0LastScaled: UFix64, reserve1LastScaled: UFix64) {
-
-    }
-
-    access(self) fun _update(reserve0LastScaled: UInt256, reserve1LastScaled: UInt256) {
-        let blockTimestamp = getCurrentBlock().timestamp
-        let timeElapsed = blockTimestamp - self.blockTimestampLast
-        if (timeElapsed > 0.0 && reserve0LastScaled != 0 && reserve1LastScaled != 0) {
-            let timeElapsedScaled = SwapConfig.UFix64ToScaledUInt256(timeElapsed)
-
-            self.price0CumulativeLastScaled = self.price0CumulativeLastScaled +
-                reserve1LastScaled * timeElapsedScaled / reserve0LastScaled
-
-            self.price1CumulativeLastScaled = self.price1CumulativeLastScaled +
-                reserve0LastScaled * timeElapsedScaled / reserve1LastScaled
-        }
-        self.blockTimestampLast = blockTimestamp
-    }
-
+    
     pub fun addLiquidity(tokenAVault: @FungibleToken.Vault, tokenBVault: @FungibleToken.Vault): @FungibleToken.Vault {
         pre {
             tokenAVault.balance > 0.0 && tokenBVault.balance > 0.0 : "SwapPair: added zero liquidity"
             (tokenAVault.isInstance(self.token0VaultType) && tokenBVault.isInstance(self.token1VaultType)) || 
             (tokenBVault.isInstance(self.token0VaultType) && tokenAVault.isInstance(self.token1VaultType)) : "SwapPair: added incompatible liquidity pair vaults"
+            self.lock == false: "Cannot reentrant"
         }
+        post {
+            self.lock == false: "Miss unlock"
+        }
+        self.lock = true
 
         let reserve0LastScaled = SwapConfig.UFix64ToScaledUInt256(self.token0Vault.balance)
         let reserve1LastScaled = SwapConfig.UFix64ToScaledUInt256(self.token1Vault.balance)
             
         // update cumultive price for TWAP
         self._update(reserve0LastScaled: reserve0LastScaled, reserve1LastScaled: reserve1LastScaled)
+        //
+        let feeOn = self._mintFee(reserve0: self.token0Vault.balance, reserve1: self.token1Vault.balance)
 
         var liquidity = 0.0
         // Add initial liquidity
@@ -192,6 +188,11 @@ pub contract SwapPair: FungibleToken {
 
         let lpTokenVault <-self.mintLpToken(amount: liquidity)
 
+        if feeOn {
+            self.rootKLast = SwapConfig.sqrt(self.token0Vault.balance) * SwapConfig.sqrt(self.token1Vault.balance)
+        }
+
+        self.lock = false
         return <-lpTokenVault
     }
 
@@ -200,10 +201,17 @@ pub contract SwapPair: FungibleToken {
         pre {
             lpTokenVault.balance > 0.0 : "SwapPair: removed zero liquidity"
             lpTokenVault.getType().identifier == Type<@SwapPair.Vault>().identifier: "SwapPair: input lpTokenVault type mismatch"
+            self.lock == false: "Cannot reentrant"
         }
+        post {
+            self.lock == false: "Miss unlock"
+        }
+        self.lock = true
+
         let reserve0LastScaled = SwapConfig.UFix64ToScaledUInt256(self.token0Vault.balance)
         let reserve1LastScaled = SwapConfig.UFix64ToScaledUInt256(self.token1Vault.balance)
-        
+        //
+        let feeOn = self._mintFee(reserve0: self.token0Vault.balance, reserve1: self.token1Vault.balance)
 
         /// Use UFIx64ToUInt256 in division & multiply to solve precision issues
         let removeAmountScaled = SwapConfig.UFix64ToScaledUInt256(lpTokenVault.balance)
@@ -223,7 +231,12 @@ pub contract SwapPair: FungibleToken {
         self.burnLpToken(from: <- (lpTokenVault as! @SwapPair.Vault))
 
         self._update(reserve0LastScaled: reserve0LastScaled, reserve1LastScaled: reserve1LastScaled)
+        //
+        if feeOn {
+            self.rootKLast = SwapConfig.sqrt(self.token0Vault.balance) * SwapConfig.sqrt(self.token1Vault.balance)
+        }
 
+        self.lock = false
         return <- [<-withdrawnToken0, <-withdrawnToken1]
     }
 
@@ -231,7 +244,13 @@ pub contract SwapPair: FungibleToken {
         pre {
             vaultIn.balance > 0.0: "SwapPair: zero in balance"
             vaultIn.isInstance(self.token0VaultType) || vaultIn.isInstance(self.token1VaultType): "SwapPair: incompatible in token vault"
+            self.lock == false: "Cannot reentrant"
         }
+        post {
+            self.lock == false: "Miss unlock"
+        }
+        self.lock = true
+
         let reserve0LastScaled = SwapConfig.UFix64ToScaledUInt256(self.token0Vault.balance)
         let reserve1LastScaled = SwapConfig.UFix64ToScaledUInt256(self.token1Vault.balance)
 
@@ -257,12 +276,59 @@ pub contract SwapPair: FungibleToken {
         if (vaultIn.isInstance(self.token0VaultType)) {
             emit Swap(inTokenAmount: vaultIn.balance, outTokenAmount: amountOut, direction: 0)
             self.token0Vault.deposit(from: <-vaultIn)
+
+            self.lock = false
             return <- self.token1Vault.withdraw(amount: amountOut)
         } else {
             emit Swap(inTokenAmount: vaultIn.balance, outTokenAmount: amountOut, direction: 1)
             self.token1Vault.deposit(from: <-vaultIn)
+
+            self.lock = false
             return <- self.token0Vault.withdraw(amount: amountOut)
         }
+    }
+
+    access(self) fun _update(reserve0LastScaled: UInt256, reserve1LastScaled: UInt256) {
+        let blockTimestamp = getCurrentBlock().timestamp
+        let timeElapsed = blockTimestamp - self.blockTimestampLast
+        if (timeElapsed > 0.0 && reserve0LastScaled != 0 && reserve1LastScaled != 0) {
+            let timeElapsedScaled = SwapConfig.UFix64ToScaledUInt256(timeElapsed)
+
+            self.price0CumulativeLastScaled = self.price0CumulativeLastScaled +
+                reserve1LastScaled * timeElapsedScaled / reserve0LastScaled
+
+            self.price1CumulativeLastScaled = self.price1CumulativeLastScaled +
+                reserve0LastScaled * timeElapsedScaled / reserve1LastScaled
+        }
+        self.blockTimestampLast = blockTimestamp
+    }
+    
+    access(self) fun _mintFee(reserve0: UFix64, reserve1: UFix64): Bool {
+        if SwapFactory.feeTo == nil {
+            if self.rootKLast != 0.0 {
+                self.rootKLast = 0.0
+            }
+            return false
+        }
+        
+        let rootK = SwapConfig.sqrt(reserve0) * SwapConfig.sqrt(reserve1)
+        let rootKLast = self.rootKLast
+        if rootK > rootKLast {
+            let numerator = self.totalSupply * (rootK - rootKLast)
+            let denominator = rootK * 5.0 + rootKLast
+            let liquidity = numerator / denominator
+            if liquidity > 0.0 {
+                let lpTokenVault <-self.mintLpToken(amount: liquidity)
+                log("-------------> add fee".concat(lpTokenVault.balance.toString()))
+                let feeToAddr = SwapFactory.feeTo
+                var lpTokenCollectionStoragePath = SwapConfig.LpTokenCollectionStoragePath
+                var lpTokenCollectionPublicPath = SwapConfig.LpTokenCollectionPublicPath
+                var lpTokenCollectionCap = getAccount(feeToAddr!).getCapability<&{SwapInterfaces.LpTokenCollectionPublic}>(lpTokenCollectionPublicPath)
+                assert(lpTokenCollectionCap.check(), message: "Lost lptokenCollection in feeTo address")
+                lpTokenCollectionCap.borrow()!.deposit(pairAddr: SwapPair.account.address, lpTokenVault: <-lpTokenVault)
+            }
+        }
+        return true
     }
 
     pub resource PairPublic: SwapInterfaces.PairPublic {
@@ -326,9 +392,14 @@ pub contract SwapPair: FungibleToken {
         self.token0Vault <- token0Vault
         self.token1Vault <- token1Vault
 
+        self.lock = false
+
         self.blockTimestampLast = getCurrentBlock().timestamp
         self.price0CumulativeLastScaled = 0
         self.price1CumulativeLastScaled = 0
+
+        self.rootKLast = 0.0
+        self._reservedFields = {}
 
         self.token0Key = SwapConfig.SliceTokenTypeIdentifierFromVaultType(vaultTypeIdentifier: self.token0VaultType.identifier)
         self.token1Key = SwapConfig.SliceTokenTypeIdentifierFromVaultType(vaultTypeIdentifier: self.token1VaultType.identifier)

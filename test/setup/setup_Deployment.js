@@ -45,8 +45,6 @@ export const deploySwapContract = async () => {
     await deployContractByName({ to: swapInterfacesAddr, name: "SwapInterfaces" })
     await deployContractByName({ to: swapConfigAddr, name: "SwapConfig" })
 
-    await deploySwapPairTemplate()
-
     await deployContractByName({
         to: swapFactoryAddr,
         name: "SwapFactory", addressMap,
@@ -54,6 +52,9 @@ export const deploySwapContract = async () => {
             swapPairTemplateAddr
         ]
     })
+
+    await deploySwapPairTemplate()
+
     return await deployContractByName({ to: swapRouterAddr, name: "SwapRouter", addressMap })
 }
 
@@ -72,6 +73,7 @@ export const deploySwapPairTemplate = async () => {
     code = code.replaceAll("\"./SwapInterfaces.cdc\"", swapInterfacesAddr)
     code = code.replaceAll("\"./SwapConfig.cdc\"", swapConfigAddr)
     code = code.replaceAll("\"./SwapError.cdc\"", swapConfigAddr)
+    code = code.replaceAll("\"./SwapFactory.cdc\"", swapFactoryAddr)
     
     const name = "factory/deploy_pair_template";
 

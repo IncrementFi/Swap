@@ -9,7 +9,7 @@ transaction() {
         let token0Vault <- Token0Name.createEmptyVault()
         let token1Vault <- Token1Name.createEmptyVault()
         
-        SwapFactory.createPair(token0Vault: <-token0Vault, token1Vault: <-token1Vault)
+        SwapFactory.createPair(token0Vault: <-token0Vault, token1Vault: <-token1Vault, storageFeeVault: nil)
 
         log("=====> Create new pair (Token0Name - Token1Name)")
     }

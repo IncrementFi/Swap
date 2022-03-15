@@ -6,7 +6,6 @@ import SwapInterfaces from "./SwapInterfaces.cdc"
 
 
 pub contract SwapRouter {
-    
     pub fun getAmountsOut(amountIn: UFix64, tokenKeyPath: [String]): [UFix64] {
         pre {
             tokenKeyPath.length >= 2: "Invalid path."

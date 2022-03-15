@@ -22,13 +22,15 @@ export const createPair = async(tokenName0, tokenName1) => {
         import Token0Name from Token0Addr
         import Token1Name from Token1Addr
         import SwapFactory from 0xSwapFactory
+        import FungibleToken from "../../contracts/tokens/FungibleToken.cdc"
 
         transaction() {
             prepare(userAccount: AuthAccount) {
                 let token0Vault <- Token0Name.createEmptyVault()
                 let token1Vault <- Token1Name.createEmptyVault()
-        
-                SwapFactory.createPair(token0Vault: <-token0Vault, token1Vault: <-token1Vault)
+                
+                let storageFeeVault <- userAccount.borrow<&FungibleToken.Vault>(from: /storage/flowTokenVault)!.withdraw(amount: 0.001)
+                SwapFactory.createPair(token0Vault: <-token0Vault, token1Vault: <-token1Vault, storageFeeVault: <-storageFeeVault)
             }
         }
     `

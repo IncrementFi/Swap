@@ -1,7 +1,7 @@
 pub contract SwapConfig {
-    pub let PairPublicPath: PublicPath
-    pub let LpTokenCollectionStoragePath: StoragePath
-    pub let LpTokenCollectionPublicPath: PublicPath
+    pub var PairPublicPath: PublicPath
+    pub var LpTokenCollectionStoragePath: StoragePath
+    pub var LpTokenCollectionPublicPath: PublicPath
 
     // Scale factor applied to fixed point number calculation. For example: 1e18 means the actual baseRatePerBlock should
     // be baseRatePerBlock / 1e18. Note: The use of scale factor is due to fixed point number in cadence is only precise to 1e-8:
@@ -13,6 +13,9 @@ pub contract SwapConfig {
     pub let ufixScale: UFix64
     // 0.00000001, i.e. 1e-8
     pub let ufix64NonZeroMin: UFix64
+    /// Reserved parameter fields: {ParamName: Value}
+    access(self) let _reservedFields: {String: AnyStruct}
+
 
     // Utility function to convert a UFix64 number to its scaled equivalent in UInt256 format
     // e.g. 184467440737.09551615 (UFix64.max) => 184467440737095516150000000000
@@ -129,7 +132,6 @@ pub contract SwapConfig {
 
 
     init() {
-
         self.PairPublicPath = /public/increment_swap_pair
         self.LpTokenCollectionStoragePath = /storage/increment_swap_lptoken_collection
         self.LpTokenCollectionPublicPath  = /public/increment_swap_lptoken_collection
@@ -140,5 +142,7 @@ pub contract SwapConfig {
         self.ufixScale = 100_000_000.0
 
         self.ufix64NonZeroMin = 0.00000001
+
+        self._reservedFields = {}
     }
 }
