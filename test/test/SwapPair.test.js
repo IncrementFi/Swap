@@ -30,7 +30,7 @@ import {
 
 import {
     addLiquidity,
-    removeLiquidity
+    removeLiquidity,
 } from "../setup/setup_SwapPair"
 
 // We need to set timeout for a higher number, because some transactions might take up some time
@@ -188,7 +188,6 @@ describe("Swap Pair Testsuites", () => {
         // totalSupply of lptoken should be 0.0
         expect(pairInfo[5]).toBe("0.00020000")
     });
-    */
 
     it("Remove liquidity - randomly", async () => {
         const userAddr0 = await getAccountAddress("user0");
@@ -199,8 +198,8 @@ describe("Swap Pair Testsuites", () => {
 
         await deployTokenByName(tokenName0);
         await deployTokenByName(tokenName1);
-        await mintTokenByName(tokenName0, userAddr0, "15000000.0");
-        await mintTokenByName(tokenName1, userAddr0, "15000000.0");
+        await mintTokenByName(tokenName0, userAddr0, "150000000.0");
+        await mintTokenByName(tokenName1, userAddr0, "150000000.0");
         await mintTokenByName(tokenName0, userAddr1, "15.0");
         await mintTokenByName(tokenName1, userAddr1, "10.0");
         
@@ -249,5 +248,19 @@ describe("Swap Pair Testsuites", () => {
         // totalSupply of lptoken should be 0.0
         expect(pairInfo[5]).toBe("11224972.16031000")
         expect(lpTokenAmount).toBe("0.00000000")
+
+        // remove user0's liquidity
+        let user0LpTokenAmount = await queryLptokenBalance(userAddr0, tokenName0, tokenName1)
+        console.log(user0LpTokenAmount)
+        await removeLiquidity(userAddr0, tokenName0, tokenName1, user0LpTokenAmount, 0.5, 500)
+        expect(
+            await queryLptokenBalance(userAddr0, tokenName0, tokenName1)
+        ).toBe(
+            "0.00000000"
+        )
+        //console.log('user0 lptoken', await queryLptokenBalance(userAddr0, tokenName0, tokenName1))
+        //console.log('local vault', (await getBalanceByName(tokenName0, userAddr0))[0], (await getBalanceByName(tokenName1, userAddr0))[0])
+        //console.log(await queryPairInfoByTokenName(tokenName0, tokenName1))
     });
+    */
 });

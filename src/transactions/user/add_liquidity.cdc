@@ -58,7 +58,7 @@ transaction(
             if (amount1Optimal <= token1InDesired) {
                 assert(amount1Optimal >= token1InMin, message:
                     SwapError.ErrorEncode(
-                        msg: "INSUFFICIENT_IN_AMOUNT expect min".concat(token1InMin.toString()).concat(" got ").concat(amount1Optimal.toString()),
+                        msg: "SLIPPAGE_OFFSET_TOO_LARGE expect min".concat(token1InMin.toString()).concat(" got ").concat(amount1Optimal.toString()),
                         err: SwapError.ErrorCode.SLIPPAGE_OFFSET_TOO_LARGE
                     )
                 )
@@ -69,7 +69,7 @@ transaction(
                 assert(amount0Optimal <= token0InDesired)
                 assert(amount0Optimal >= token0InMin, message:
                     SwapError.ErrorEncode(
-                        msg: "INSUFFICIENT_IN_AMOUNT expect min".concat(token0InMin.toString()).concat(" got ").concat(amount0Optimal.toString()),
+                        msg: "SLIPPAGE_OFFSET_TOO_LARGE expect min".concat(token0InMin.toString()).concat(" got ").concat(amount0Optimal.toString()),
                         err: SwapError.ErrorCode.SLIPPAGE_OFFSET_TOO_LARGE
                     )
                 )

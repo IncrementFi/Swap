@@ -10,6 +10,9 @@ pub contract interface SwapInterfaces {
         pub fun swap(vaultIn: @FungibleToken.Vault, exactAmountOut: UFix64?): @FungibleToken.Vault
         pub fun getAmountIn(amountOut: UFix64, tokenOutKey: String): UFix64
         pub fun getAmountOut(amountIn: UFix64, tokenInKey: String): UFix64
+        pub fun getPrice0CumulativeLastScaled(): UInt256
+        pub fun getPrice1CumulativeLastScaled(): UInt256
+        pub fun getBlockTimestampLast(): UFix64
         pub fun getPairInfo(): [AnyStruct]
         pub fun getLpTokenVaultType(): Type
     }

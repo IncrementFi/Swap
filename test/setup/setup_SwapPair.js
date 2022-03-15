@@ -120,3 +120,50 @@ export const addLiquidity = async(
     ]
     return sendTransaction({ code, args, signers })
 }
+
+export const getPriceCumulativeLast = async (tokenName0, tokenName1) => {
+    const [pairInfo, err] = await queryPairInfoByTokenName(tokenName0, tokenName1)
+    console.log(pairInfo)
+    const pairAddr = pairInfo[4]
+    //import SwapPair from ${pairAddr}
+    const code = `
+        import SwapInterfaces from "../../contracts/SwapInterfaces.cdc"
+        import SwapConfig from "../../contracts/SwapConfig.cdc"
+
+        pub fun main(pairAddr: Address): [UInt256] {
+            let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!
+            
+            return [
+                pairPublicRef.getPrice0CumulativeLastScaled(),
+                pairPublicRef.getPrice1CumulativeLastScaled()
+            ]
+        }
+    `;
+    const args = [pairAddr];
+    let res = await executeScript({ code, args });
+    return res
+}
+
+export const getTwapInfo = async (tokenName0, tokenName1) => {
+    const [pairInfo, err] = await queryPairInfoByTokenName(tokenName0, tokenName1)
+    const pairAddr = pairInfo[4]
+    //import SwapPair from ${pairAddr}
+    const code = `
+        import SwapInterfaces from "../../contracts/SwapInterfaces.cdc"
+        import SwapConfig from "../../contracts/SwapConfig.cdc"
+
+        pub fun main(pairAddr: Address): [AnyStruct] {
+            let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!
+            
+            let curTimestamp = getCurrentBlock().timestamp
+            return [
+                pairPublicRef.getPrice0CumulativeLastScaled(),
+                pairPublicRef.getPrice1CumulativeLastScaled(),
+                curTimestamp
+            ]
+        }
+    `;
+    const args = [pairAddr];
+    let res = await executeScript({ code, args });
+    return res
+}
