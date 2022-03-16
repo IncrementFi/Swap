@@ -3,14 +3,15 @@ import Token1Name from Token1Addr
 
 import SwapFactory from "../../contracts/SwapFactory.cdc"
 
-// deploy code copied by a deployed contract
+/// deploy code copied by a deployed contract
 transaction() {
     prepare(userAccount: AuthAccount) {
+    }
+    execute {
         let token0Vault <- Token0Name.createEmptyVault()
         let token1Vault <- Token1Name.createEmptyVault()
         
         SwapFactory.createPair(token0Vault: <-token0Vault, token1Vault: <-token1Vault, storageFeeVault: nil)
-
         log("=====> Create new pair (Token0Name - Token1Name)")
     }
 }

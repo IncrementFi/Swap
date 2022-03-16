@@ -1,14 +1,26 @@
+/**
+
+# The router supports a chained swap trade
+
+# Author: Increment Labs
+
+*/
 import FungibleToken from "./tokens/FungibleToken.cdc"
 import SwapFactory from "./SwapFactory.cdc"
 import SwapConfig from "./SwapConfig.cdc"
 import SwapError from "./SwapError.cdc"
 import SwapInterfaces from "./SwapInterfaces.cdc"
 
-
 pub contract SwapRouter {
+    /// Perform a chained swap calculation start with exact amountIn
+    ///
+    /// @Param  - amountIn:     e.g. 50.0
+    /// @Param  - tokenKeyPath: e.g. [A.f8d6e0586b0a20c7.FUSD, A.f8d6e0586b0a20c7.FlowToken, A.f8d6e0586b0a20c7.USDC]
+    /// @Return - [UFix64]:     e.g. [50.0, 10.0, 48.0]
+    ///
     pub fun getAmountsOut(amountIn: UFix64, tokenKeyPath: [String]): [UFix64] {
         pre {
-            tokenKeyPath.length >= 2: "Invalid path."
+            tokenKeyPath.length >= 2: SwapError.ErrorEncode(msg: "Invalid path.", err: SwapError.ErrorCode.INVALID_PARAMETERS)
         }
         var amounts: [UFix64] = []
         for tokenKey in tokenKeyPath {
@@ -18,12 +30,20 @@ pub contract SwapRouter {
 
         var i: Int = 0
         while (i < tokenKeyPath.length-1) {
-            // TODO nil check
-            let pairAddr = SwapFactory.getPairAddress(token0Key: tokenKeyPath[i], token1Key: tokenKeyPath[i+1])!
+            let pairAddr = SwapFactory.getPairAddress(token0Key: tokenKeyPath[i], token1Key: tokenKeyPath[i+1]) ?? panic(
+                SwapError.ErrorEncode(
+                    msg: "Non-existing swap pair with ".concat(tokenKeyPath[i]).concat(" ").concat(tokenKeyPath[i+1]),
+                    err: SwapError.ErrorCode.NONEXISTING_SWAP_PAIR
+                )
+            )
             
-            // TODO nil check
-            let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!
-
+            let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow() ?? panic(
+                SwapError.ErrorEncode(
+                    msg: "Lost SwapPair public capability",
+                    err: SwapError.ErrorCode.LOST_PUBLIC_CAPABILITY
+                )
+            )
+            /// Previous swap result will be the input of the next swap
             amounts[i+1] = pairPublicRef.getAmountOut(amountIn: amounts[i], tokenInKey: tokenKeyPath[i])
 
             i = i + 1
@@ -32,9 +52,11 @@ pub contract SwapRouter {
         return amounts
     }
 
+    /// Perform a chained swap calculation end with exact amountOut
+    ///
     pub fun getAmountsIn(amountOut: UFix64, tokenKeyPath: [String]): [UFix64] {
         pre {
-            tokenKeyPath.length >= 2: "Invalid path."
+            tokenKeyPath.length >= 2: SwapError.ErrorEncode(msg: "Invalid path.", err: SwapError.ErrorCode.INVALID_PARAMETERS)
         }
         var amounts: [UFix64] = []
         for tokenKey in tokenKeyPath {
@@ -44,12 +66,20 @@ pub contract SwapRouter {
 
         var i: Int = tokenKeyPath.length-1
         while (i > 0) {
-            // TODO nil check
-            let pairAddr = SwapFactory.getPairAddress(token0Key: tokenKeyPath[i], token1Key: tokenKeyPath[i-1])!
+            let pairAddr = SwapFactory.getPairAddress(token0Key: tokenKeyPath[i], token1Key: tokenKeyPath[i-1]) ?? panic(
+                SwapError.ErrorEncode(
+                    msg: "Non-existing swap pair with ".concat(tokenKeyPath[i]).concat(" ").concat(tokenKeyPath[i+1]),
+                    err: SwapError.ErrorCode.NONEXISTING_SWAP_PAIR
+                )
+            )
             
-            // TODO nil check
-            let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!
-
+            let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow() ?? panic(
+                SwapError.ErrorEncode(
+                    msg: "Lost SwapPair public capability",
+                    err: SwapError.ErrorCode.LOST_PUBLIC_CAPABILITY
+                )
+            )
+            /// Calculate from back to front
             amounts[i-1] = pairPublicRef.getAmountIn(amountOut: amounts[i], tokenOutKey: tokenKeyPath[i])
 
             i = i - 1
@@ -58,6 +88,17 @@ pub contract SwapRouter {
         return amounts
     }
 
+    /// SwapExactTokensForTokens
+    ///
+    /// Make sure the exact amountIn in swap start
+    /// @Param  - vaultIn:      Vault with exact amountIn
+    /// @Param  - amountOutMin: Desired minimum amountOut if slippage occurs
+    /// @Param  - tokenKeyPath: Chained swap
+    ///                         e.g. if swap from FUSD to USDC through FlowToken
+    ///                              [A.f8d6e0586b0a20c7.FUSD, A.f8d6e0586b0a20c7.FlowToken, A.f8d6e0586b0a20c7.USDC]
+    /// @Param  - deadline:     The timeout block timestamp for the transaction
+    /// @Return - Vault:        Swap out vault
+    ///
     pub fun swapExactTokensForTokens(
         vaultIn: @FungibleToken.Vault,
         amountOutMin: UFix64,
@@ -81,6 +122,16 @@ pub contract SwapRouter {
         return <- self.swapWithPath(vaultIn: <-vaultIn, tokenKeyPath: tokenKeyPath, exactAmounts: nil)
     }
 
+    /// SwapTokensForExactTokens
+    ///
+    /// @Param  - vaultIn:      Vault with exact amountIn
+    /// @Param  - amountOut:    Make sure the exact amountOut in swap end
+    /// @Param  - tokenKeyPath: Chained swap
+    ///                         e.g. if swap from FUSD to USDC through FlowToken
+    ///                              [A.f8d6e0586b0a20c7.FUSD, A.f8d6e0586b0a20c7.FlowToken, A.f8d6e0586b0a20c7.USDC]
+    /// @Param  - deadline:     The timeout block timestamp for the transaction
+    /// @Return - [OutVault, RemainVault]
+    ///
     pub fun swapTokensForExactTokens(
         vaultIn: @FungibleToken.Vault,
         amountOut: UFix64,
@@ -107,11 +158,13 @@ pub contract SwapRouter {
         return <-[<-self.swapWithPath(vaultIn: <-vaultInExact, tokenKeyPath: tokenKeyPath, exactAmounts: amounts), <-vaultIn]
     }
 
+    /// SwapWithPath
+    ///
     pub fun swapWithPath(vaultIn: @FungibleToken.Vault, tokenKeyPath: [String], exactAmounts: [UFix64]?): @FungibleToken.Vault {
         pre {
-            tokenKeyPath.length >= 2: "Invalid path."
+            tokenKeyPath.length >= 2: SwapError.ErrorEncode(msg: "Invalid path.", err: SwapError.ErrorCode.INVALID_PARAMETERS)
         }
-        /// Split the loop to reduce gas cost
+        /// To reduce the gas cost, handle the first five swap out of the loop
         var exactAmountOut1: UFix64? = nil
         if exactAmounts != nil { exactAmountOut1 = exactAmounts![1] }
         let vaultOut1 <- self.swapWithPair(vaultIn: <- vaultIn, exactAmountOut: exactAmountOut1, token0Key: tokenKeyPath[0], token1Key: tokenKeyPath[1])
@@ -139,7 +192,7 @@ pub contract SwapRouter {
         if tokenKeyPath.length == 5 {
             return <-vaultOut4
         }
-
+        /// Loop swap for any length path
         var index = 4
         var curVaultOut <- vaultOut4
         while(index < tokenKeyPath.length-1) {
@@ -154,11 +207,11 @@ pub contract SwapRouter {
             index = index + 1
         }
     
-        // TODO event
         return <-curVaultOut
     }
 
-    /// one to one
+    /// SwapWithPair
+    ///
     pub fun swapWithPair(
         vaultIn: @FungibleToken.Vault,
         exactAmountOut: UFix64?,
@@ -167,7 +220,6 @@ pub contract SwapRouter {
     ): @FungibleToken.Vault {
         let pairAddr = SwapFactory.getPairAddress(token0Key: token0Key, token1Key: token1Key)!
         let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!
-
         return <- pairPublicRef.swap(vaultIn: <- vaultIn, exactAmountOut: exactAmountOut)
     }
 

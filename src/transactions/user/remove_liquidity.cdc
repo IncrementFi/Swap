@@ -22,13 +22,11 @@ transaction(
                 err: SwapError.ErrorCode.EXPIRED
             )
         )
-        // TODO nil check
         let pairAddr = SwapFactory.getPairAddress(token0Key: token0Key, token1Key: token1Key)!
 
         var lpTokenCollectionStoragePath = SwapConfig.LpTokenCollectionStoragePath
         var lpTokenCollectionRef = userAccount.borrow<&SwapFactory.LpTokenCollection>(from: lpTokenCollectionStoragePath)
 
-        //
         var lpTokenRemove <- lpTokenCollectionRef!.withdraw(pairAddr: pairAddr, amount: lpTokenAmount)
         let tokens <- getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!.removeLiquidity(lpTokenVault: <-lpTokenRemove)
         let token0Vault <- tokens[0].withdraw(amount: tokens[0].balance)
@@ -44,8 +42,7 @@ transaction(
         
         log("=====> remove liquidity: ".concat(token0Key).concat(token1Key))
         log("return tokens amounts:".concat(token0Vault.balance.toString()).concat(", ").concat(token1Vault.balance.toString()))
-        
-        // TODO nil check
+        /// Here does not detect whether the local receiver vault exsit.
         userAccount.borrow<&FungibleToken.Vault>(from: token0VaultPath)!.deposit(from: <-token0Vault)
         userAccount.borrow<&FungibleToken.Vault>(from: token1VaultPath)!.deposit(from: <-token1Vault)
     }

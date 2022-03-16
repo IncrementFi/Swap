@@ -7,7 +7,7 @@ pub fun main(queryAddr: Address): [String] {
     let colon: UInt8 = 58
     let space: UInt8 = 32
     let brace: UInt8 = 123
-    // utf8 code of "FungibleToken"
+    /// utf8 code of "FungibleToken"
     let tokenIndentifier: [UInt8] = [70, 117, 110, 103, 105, 98, 108, 101, 84, 111, 107, 101, 110] 
     let indentifierLength = tokenIndentifier.length
 

@@ -4,7 +4,6 @@ import SwapInterfaces from "../../contracts/SwapInterfaces.cdc"
 import SwapConfig from "../../contracts/SwapConfig.cdc"
 import SwapError from "../../contracts/SwapError.cdc"
 
-// deploy code copied by a deployed contract
 transaction(
     token0Key: String,
     token1Key: String,
@@ -24,7 +23,6 @@ transaction(
                 err: SwapError.ErrorCode.EXPIRED
             )
         )
-        // TODO nil check
         let pairAddr = SwapFactory.getPairAddress(token0Key: token0Key, token1Key: token1Key)!
         
         let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!
@@ -76,18 +74,15 @@ transaction(
             }
         }
         
-        // TODO nil check
         let token0Vault <- userAccount.borrow<&FungibleToken.Vault>(from: token0VaultPath)!.withdraw(amount: token0In)
         let token1Vault <- userAccount.borrow<&FungibleToken.Vault>(from: token1VaultPath)!.withdraw(amount: token1In)
 
-
-        // TODO nil check
         let lpTokenVault <- pairPublicRef.addLiquidity(
             tokenAVault: <- token0Vault,
             tokenBVault: <- token1Vault
         )
 
-        log("=====> add liquidity: ".concat(token0Key).concat(token1Key).concat("mint lp:").concat(lpTokenVault.balance.toString()))
+        log("=====> Add liquidity: ".concat(token0Key).concat(token1Key).concat("mint lp:").concat(lpTokenVault.balance.toString()))
         
         var lpTokenCollectionStoragePath = SwapConfig.LpTokenCollectionStoragePath
         var lpTokenCollectionPublicPath = SwapConfig.LpTokenCollectionPublicPath

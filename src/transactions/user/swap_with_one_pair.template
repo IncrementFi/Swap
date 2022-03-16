@@ -7,8 +7,6 @@ import SwapConfig from "../../contracts/SwapConfig.cdc"
 import SwapRouter from "../../contracts/SwapRouter.cdc"
 
 
-
-// deploy code copied by a deployed contract
 transaction(
     tokenInKey: String,
     tokenOutKey: String,

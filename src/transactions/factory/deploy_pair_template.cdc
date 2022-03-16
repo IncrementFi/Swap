@@ -1,6 +1,6 @@
 import FlowToken from "../../contracts/tokens/FlowToken.cdc"
 
-// deploy code copied by a deployed contract
+/// deploy code copied by a deployed contract
 transaction(pairTemplateCode: String) {
     prepare(deployAccount: AuthAccount) {
         let token0Vault <- FlowToken.createEmptyVault()
@@ -8,7 +8,6 @@ transaction(pairTemplateCode: String) {
         deployAccount.contracts.add(name: "SwapPair", code: pairTemplateCode.utf8, token0Vault:token0Vault, token1Vault:token1Vault)
         destroy token0Vault
         destroy token1Vault
-
         log("=====> Pair template deploy succ")
     }
 }

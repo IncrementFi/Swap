@@ -1,28 +1,47 @@
+/**
+
+# Factory contract for creating new trading pairs.
+
+# Author: Increment Labs
+
+*/
 import FungibleToken from "./tokens/FungibleToken.cdc"
 import SwapError from "./SwapError.cdc"
 import SwapConfig from "./SwapConfig.cdc"
 import SwapInterfaces from "./SwapInterfaces.cdc"
 
-
 pub contract SwapFactory {
-    // Account which has deployed pair template contract
+    /// Account which has deployed pair template contract
     pub var pairContractTemplateAddress: Address
 
+    /// All pairs in array
     access(self) let pairArr: [Address]
-    // pairMap[token0Identifier][token1Identifier] == pairMap[token1Identifier][token0Identifier]
+    /// pairMap[token0Identifier][token1Identifier] == pairMap[token1Identifier][token0Identifier]
     access(self) let pairMap: { String: {String: Address} }
 
     /// Events
     pub event PairCreated(token0Key: String, token1Key: String, pairAddress: Address, numPairs: Int)
 
+    /// Fee receiver address
     pub var feeTo: Address?
 
     /// Reserved parameter fields: {ParamName: Value}
     access(self) let _reservedFields: {String: AnyStruct}
 
-
+    /// Create Pair
+    ///
+    /// @Param - token0/1Vault: use createEmptyVault() to create init vault types for SwapPair
+    /// @Param - storageFeeVault: An initial flowtoken can be provided for backing storage.
+    ///
     pub fun createPair(token0Vault: @FungibleToken.Vault, token1Vault: @FungibleToken.Vault, storageFeeVault: @FungibleToken.Vault?): Address {
-        // The tokenKey is the type identifier of the token, eg A.f8d6e0586b0a20c7.FlowToken
+        pre {
+            token0Vault.balance == 0.0 && token1Vault.balance == 0.0:
+                SwapError.ErrorEncode(
+                    msg: "There is no need to provide liquidity when creating a pool",
+                    err: SwapError.ErrorCode.INVALID_PARAMETERS
+                )
+        }
+        /// The tokenKey is the type identifier of the token, eg A.f8d6e0586b0a20c7.FlowToken
         let token0Key = SwapConfig.SliceTokenTypeIdentifierFromVaultType(vaultTypeIdentifier: token0Vault.getType().identifier)
         let token1Key = SwapConfig.SliceTokenTypeIdentifierFromVaultType(vaultTypeIdentifier: token1Vault.getType().identifier)
         assert(
@@ -42,7 +61,7 @@ pub contract SwapFactory {
 
         let pairAccount = AuthAccount(payer: self.account)
         let pairAddress = pairAccount.address
-        // Add initial flow tokens for deployment
+        /// Add initial flow tokens for deployment
         if storageFeeVault != nil {
             pairAccount.getCapability(/public/flowTokenReceiver).borrow<&{FungibleToken.Receiver}>()!.deposit(from: <-storageFeeVault!)
         } else {
@@ -50,7 +69,7 @@ pub contract SwapFactory {
         }
 
         let pairTemplateContract = getAccount(self.pairContractTemplateAddress).contracts.get(name: "SwapPair")!
-        // Deploy pair contract with initialized parameters
+        /// Deploy pair contract with initialized parameters
         pairAccount.contracts.add(
             name: "SwapPair",
             code: pairTemplateContract.code,
@@ -60,7 +79,7 @@ pub contract SwapFactory {
         destroy token0Vault
         destroy token1Vault
         
-        // insert pair map
+        /// insert pair map
         if (self.pairMap.containsKey(token0Key) == false) {
             self.pairMap.insert(key: token0Key, {})
         }
@@ -72,17 +91,19 @@ pub contract SwapFactory {
 
         self.pairArr.append(pairAddress)
 
-        // event
+        /// event
         emit PairCreated(token0Key: token0Key, token1Key: token1Key, pairAddress: pairAddress, numPairs: self.pairArr.length)
 
         return pairAddress
     }
     
-    ///
     pub fun createEmptyLpTokenCollection(): @LpTokenCollection {
         return <-create LpTokenCollection()
     }
 
+    /// LpToken Collection Resource
+    ///
+    /// Used to collect all lptoken vaults in the user's local storage
     ///
     pub resource LpTokenCollection: SwapInterfaces.LpTokenCollectionPublic {
         access(self) var lpTokenVaults: @{Address: FungibleToken.Vault}
@@ -173,6 +194,7 @@ pub contract SwapFactory {
         }
     }
     
+    
     pub fun getPairAddress(token0Key: String, token1Key: String): Address? {
         let pairExist0To1 = self.pairMap.containsKey(token0Key) && self.pairMap[token0Key]!.containsKey(token1Key)
         let pairExist1To0 = self.pairMap.containsKey(token1Key) && self.pairMap[token1Key]!.containsKey(token0Key)
@@ -211,7 +233,7 @@ pub contract SwapFactory {
             endIndex = pairLen-1
         }
 
-        // Array.slice function does not sopported now
+        /// Array.slice function does not sopported now
         let list: [Address] = []
         while curIndex <= endIndex && curIndex < pairLen {
             list.append(self.pairArr[curIndex])
@@ -235,6 +257,8 @@ pub contract SwapFactory {
         return res
     }
 
+    /// Admin
+    ///
     pub resource Admin {
         pub fun setPairContractTemplateAddress(newAddr: Address) {
             SwapFactory.pairContractTemplateAddress = newAddr

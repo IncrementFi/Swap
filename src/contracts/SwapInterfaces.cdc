@@ -1,3 +1,10 @@
+/**
+
+# Swap related interface definitions all-in-one
+
+# Author: Increment Labs
+
+*/
 import FungibleToken from "./tokens/FungibleToken.cdc"
 
 pub contract interface SwapInterfaces {

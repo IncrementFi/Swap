@@ -4,7 +4,6 @@ import FungibleToken from "../../contracts/tokens/FungibleToken.cdc"
 import SwapRouter from "../../contracts/SwapRouter.cdc"
 import SwapError from "../../contracts/SwapError.cdc"
 
-// deploy code copied by a deployed contract
 transaction(
     tokenKeyPathFlat: [String],
     amountInSplit: [UFix64],
