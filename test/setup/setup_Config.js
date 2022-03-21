@@ -28,7 +28,9 @@ export const sqrt = async (num) => {
         import SwapConfig from ${ConfigDeployerAddress}
 
         pub fun main(_ num: UFix64): UFix64 {
-            return SwapConfig.sqrt(num)
+            let numScaled = SwapConfig.UFix64ToScaledUInt256(num)
+            let resScaled = SwapConfig.sqrt(numScaled)
+            return SwapConfig.ScaledUInt256ToUFix64(resScaled)
         }
     `;
     const args = [num];

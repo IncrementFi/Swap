@@ -171,7 +171,9 @@ pub contract SwapPair: FungibleToken {
                 self.token1Vault.deposit(from: <-tokenAVault)
             }
             /// Mint initial liquidity token and donate 1e-8 initial minimum liquidity token
-            let initialLpAmount = SwapConfig.sqrt(self.token0Vault.balance) * SwapConfig.sqrt(self.token1Vault.balance)
+            let initialLpAmount = SwapConfig.ScaledUInt256ToUFix64(
+                SwapConfig.sqrt(SwapConfig.UFix64ToScaledUInt256(self.token0Vault.balance) * SwapConfig.UFix64ToScaledUInt256(self.token1Vault.balance) / SwapConfig.scaleFactor)
+            )
             self.donateInitialMinimumLpToken()
             
             liquidity = initialLpAmount - SwapConfig.ufix64NonZeroMin
@@ -208,7 +210,9 @@ pub contract SwapPair: FungibleToken {
         let lpTokenVault <-self.mintLpToken(amount: liquidity)
 
         if feeOn {
-            self.rootKLast = SwapConfig.sqrt(self.token0Vault.balance) * SwapConfig.sqrt(self.token1Vault.balance)
+            self.rootKLast = SwapConfig.ScaledUInt256ToUFix64(
+                SwapConfig.sqrt(SwapConfig.UFix64ToScaledUInt256(self.token0Vault.balance) * SwapConfig.UFix64ToScaledUInt256(self.token1Vault.balance) / SwapConfig.scaleFactor)
+            )
         }
 
         self.lock = false
@@ -262,7 +266,9 @@ pub contract SwapPair: FungibleToken {
         self.burnLpToken(from: <- (lpTokenVault as! @SwapPair.Vault))
 
         if feeOn {
-            self.rootKLast = SwapConfig.sqrt(self.token0Vault.balance) * SwapConfig.sqrt(self.token1Vault.balance)
+            self.rootKLast = SwapConfig.ScaledUInt256ToUFix64(
+                SwapConfig.sqrt(SwapConfig.UFix64ToScaledUInt256(self.token0Vault.balance) * SwapConfig.UFix64ToScaledUInt256(self.token1Vault.balance) / SwapConfig.scaleFactor)
+            )
         }
 
         self.lock = false
@@ -351,7 +357,9 @@ pub contract SwapPair: FungibleToken {
             return false
         }
         
-        let rootK = SwapConfig.sqrt(reserve0) * SwapConfig.sqrt(reserve1)
+        let rootK = SwapConfig.ScaledUInt256ToUFix64(
+            SwapConfig.sqrt(SwapConfig.UFix64ToScaledUInt256(self.token0Vault.balance) * SwapConfig.UFix64ToScaledUInt256(self.token1Vault.balance) / SwapConfig.scaleFactor)
+        )
         let rootKLast = self.rootKLast
         if rootK > rootKLast {
             let numerator = self.totalSupply * (rootK - rootKLast)

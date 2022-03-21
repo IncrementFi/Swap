@@ -28,9 +28,10 @@ describe("SwapConfig Testsuites", () => {
     afterEach(async () => {
         return emulator.stop();
     });
-    /*
+
     it("Test sqrt", async () => {
         await deployConfigContract();
+        console.log((await sqrt(0.0000))[0])
         expect(
             (await sqrt(1.0000))[0]
         ).toBe(
@@ -52,12 +53,18 @@ describe("SwapConfig Testsuites", () => {
             "0.73484692"
         );
         expect(
+            (await sqrt(999.09))[0]
+        ).toBe(
+            "31.60838496"
+        );
+
+        expect(
             (await sqrt(184467440735))[0]
         ).toBe(
             "429496.72959756"
         );
     });
-    
+
     it("Test getAmountOut", async () => {
         await deployConfigContract();
         var reserveIn = 999.0
@@ -102,10 +109,11 @@ describe("SwapConfig Testsuites", () => {
         var amountIn = 0.0
         var amountOut = 1293.57558147
         amountIn = (await getAmountIn(amountOut, reserveIn, reserveOut))[0]
+        //console.log('   js:', amountOut * reserveIn / (reserveOut - amountOut) / 0.997)
         expect(
             amountIn
         ).toBe(
-            "12.99999999"
+            "13.00000000"  // 12.99999999 + 0.00000001
         );
         //
         var reserveIn = 999412189.0
@@ -113,10 +121,11 @@ describe("SwapConfig Testsuites", () => {
         var amountIn = 0.0
         var amountOut = 75265.56609763
         amountIn = (await getAmountIn(amountOut, reserveIn, reserveOut))[0]
+        
         expect(
             amountIn
         ).toBe(
-            "1893912.99999996"
+            "1893912.99999997"
         );
 
         var reserveIn = 0.001232
@@ -127,7 +136,7 @@ describe("SwapConfig Testsuites", () => {
         expect(
             amountIn
         ).toBe(
-            "0.12291243"
+            "0.12291244"
         );
     });
     
@@ -167,8 +176,7 @@ describe("SwapConfig Testsuites", () => {
             "0.00014858"
         );
     });
-    */
-
+    /*
     it("Test getAmountIn", async () => {
         await deployConfigContract();
         var reserveIn = 999.0
@@ -185,4 +193,5 @@ describe("SwapConfig Testsuites", () => {
         console.log('   js:', 0.997 * amountIn * reserveOut / (reserveIn + 0.997 * amountIn))
         console.log('want out', amountOut)
     });
+    */
 });

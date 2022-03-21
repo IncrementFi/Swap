@@ -49,7 +49,7 @@ describe("Swap Pair Testsuites", () => {
     afterEach(async () => {
         return emulator.stop();
     });
-    /*
+    
     it("Add liquidity - firstly", async () => {
         const userAddr = await getAccountAddress("user");
 
@@ -89,10 +89,10 @@ describe("Swap Pair Testsuites", () => {
         expect(pairInfo[3]).toBe("10.00000000")
 
         // totalSupply of lptoken should be 0.0
-        expect(pairInfo[5]).toBe("12.24744872")
+        expect(pairInfo[5]).toBe("12.24744871")
 
         // 0.00000001 should be cut when provide the liquidation for the first time.
-        expect(lpTokenAmount).toBe("12.24744871")
+        expect(lpTokenAmount).toBe("12.24744870")
 
         // local vault check
         expect(
@@ -106,6 +106,7 @@ describe("Swap Pair Testsuites", () => {
             "90.00000000"
         )
     });
+
     it("Add liquidity - firstly - limit testing 1", async () => {
         const userAddr = await getAccountAddress("user");
 
@@ -136,6 +137,7 @@ describe("Swap Pair Testsuites", () => {
         
         // pool info
         const [pairInfo, err] = await queryPairInfoByTokenName(tokenName0, tokenName1)
+        //console.log(pairInfo)
         // lptokne
         const lpTokenAmount = await queryLptokenBalance(userAddr, tokenName0, tokenName1)
 
@@ -145,8 +147,9 @@ describe("Swap Pair Testsuites", () => {
         expect(pairInfo[3]).toBe("184467440736.00000000")
 
         // totalSupply of lptoken should be 0.0
-        expect(pairInfo[5]).toBe("184467440735.99600453")
+        expect(pairInfo[5]).toBe("184467440736.00000000")
     });
+    
     it("Add liquidity - firstly - limit testing 2", async () => {
         const userAddr = await getAccountAddress("user");
 
@@ -188,7 +191,7 @@ describe("Swap Pair Testsuites", () => {
         // totalSupply of lptoken should be 0.0
         expect(pairInfo[5]).toBe("0.00020000")
     });
-
+    
     it("Remove liquidity - randomly", async () => {
         const userAddr0 = await getAccountAddress("user0");
         const userAddr1 = await getAccountAddress("user1");
@@ -245,8 +248,7 @@ describe("Swap Pair Testsuites", () => {
         )
         
         expect(err).toBeNull()
-        // totalSupply of lptoken should be 0.0
-        expect(pairInfo[5]).toBe("11224972.16031000")
+        expect(pairInfo[5]).toBe("11224972.16032182")
         expect(lpTokenAmount).toBe("0.00000000")
 
         // remove user0's liquidity
@@ -262,5 +264,5 @@ describe("Swap Pair Testsuites", () => {
         //console.log('local vault', (await getBalanceByName(tokenName0, userAddr0))[0], (await getBalanceByName(tokenName1, userAddr0))[0])
         //console.log(await queryPairInfoByTokenName(tokenName0, tokenName1))
     });
-    */
+    
 });
