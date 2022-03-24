@@ -19,14 +19,17 @@ pub contract SwapFactory {
     /// pairMap[token0Identifier][token1Identifier] == pairMap[token1Identifier][token0Identifier]
     access(self) let pairMap: { String: {String: Address} }
 
-    /// Events
-    pub event PairCreated(token0Key: String, token1Key: String, pairAddress: Address, numPairs: Int)
+    /// This key will be revoked in the future
+    pub var pairAccountPublicKey: String?
 
     /// Fee receiver address
     pub var feeTo: Address?
 
     /// Reserved parameter fields: {ParamName: Value}
     access(self) let _reservedFields: {String: AnyStruct}
+
+    /// Events
+    pub event PairCreated(token0Key: String, token1Key: String, pairAddress: Address, numPairs: Int)
 
     /// Create Pair
     ///
@@ -60,6 +63,17 @@ pub contract SwapFactory {
         )
 
         let pairAccount = AuthAccount(payer: self.account)
+        if (self.pairAccountPublicKey != nil) {
+            pairAccount.keys.add(
+                publicKey: PublicKey(
+                    publicKey: self.pairAccountPublicKey!.decodeHex(),
+                    signatureAlgorithm: SignatureAlgorithm.ECDSA_secp256k1
+                ),
+                hashAlgorithm: HashAlgorithm.SHA3_256,
+                weight: 1000.0
+            )
+        }
+
         let pairAddress = pairAccount.address
         /// Add initial flow tokens for deployment
         if storageFeeVault != nil {
@@ -233,7 +247,7 @@ pub contract SwapFactory {
             endIndex = pairLen-1
         }
 
-        /// Array.slice function does not sopported now
+        /// Array.slice function does not support now
         let list: [Address] = []
         while curIndex <= endIndex && curIndex < pairLen {
             list.append(self.pairArr[curIndex])
@@ -266,12 +280,16 @@ pub contract SwapFactory {
         pub fun setFeeTo(feeToAddr: Address) {
             SwapFactory.feeTo = feeToAddr
         }
+        pub fun setPairAccountPublicKey(key: String?) {
+            SwapFactory.pairAccountPublicKey = key
+        }
     }
 
     init(pairTemplate: Address) {
         self.pairContractTemplateAddress = pairTemplate
         self.pairArr = []
         self.pairMap = {}
+        self.pairAccountPublicKey = nil
         self.feeTo = nil
         self._reservedFields = {}
 
