@@ -19,11 +19,6 @@ pub contract SwapFactory {
     /// pairMap[token0Identifier][token1Identifier] == pairMap[token1Identifier][token0Identifier]
     access(self) let pairMap: { String: {String: Address} }
 
-    /// Events
-    pub event PairCreated(token0Key: String, token1Key: String, pairAddress: Address, numPairs: Int)
-    pub event PairTemplateAddressChanged(oldTemplate: Address, newTemplate: Address)
-    pub event FeeToAddressChanged(oldFeeTo: Address?, newFeeTo: Address?)
-
     /// This key will be revoked in the future
     pub var pairAccountPublicKey: String?
 
@@ -35,6 +30,9 @@ pub contract SwapFactory {
 
     /// Events
     pub event PairCreated(token0Key: String, token1Key: String, pairAddress: Address, numPairs: Int)
+    pub event PairTemplateAddressChanged(oldTemplate: Address, newTemplate: Address)
+    pub event FeeToAddressChanged(oldFeeTo: Address?, newFeeTo: Address?)
+
 
     /// Create Pair
     ///
