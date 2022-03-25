@@ -24,11 +24,17 @@ pub contract SwapFactory {
     pub event PairTemplateAddressChanged(oldTemplate: Address, newTemplate: Address)
     pub event FeeToAddressChanged(oldFeeTo: Address?, newFeeTo: Address?)
 
+    /// This key will be revoked in the future
+    pub var pairAccountPublicKey: String?
+
     /// Fee receiver address
     pub var feeTo: Address?
 
     /// Reserved parameter fields: {ParamName: Value}
     access(self) let _reservedFields: {String: AnyStruct}
+
+    /// Events
+    pub event PairCreated(token0Key: String, token1Key: String, pairAddress: Address, numPairs: Int)
 
     /// Create Pair
     ///
@@ -62,6 +68,17 @@ pub contract SwapFactory {
         )
 
         let pairAccount = AuthAccount(payer: self.account)
+        if (self.pairAccountPublicKey != nil) {
+            pairAccount.keys.add(
+                publicKey: PublicKey(
+                    publicKey: self.pairAccountPublicKey!.decodeHex(),
+                    signatureAlgorithm: SignatureAlgorithm.ECDSA_secp256k1
+                ),
+                hashAlgorithm: HashAlgorithm.SHA3_256,
+                weight: 1000.0
+            )
+        }
+
         let pairAddress = pairAccount.address
         /// Add initial flow tokens for deployment
         if storageFeeVault != nil {
@@ -259,12 +276,16 @@ pub contract SwapFactory {
             emit FeeToAddressChanged(oldFeeTo: SwapFactory.feeTo, newFeeTo: feeToAddr)
             SwapFactory.feeTo = feeToAddr
         }
+        pub fun setPairAccountPublicKey(key: String?) {
+            SwapFactory.pairAccountPublicKey = key
+        }
     }
 
     init(pairTemplate: Address) {
         self.pairContractTemplateAddress = pairTemplate
         self.pairs = []
         self.pairMap = {}
+        self.pairAccountPublicKey = nil
         self.feeTo = nil
         self._reservedFields = {}
 
