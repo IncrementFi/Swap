@@ -1,10 +1,10 @@
 {
-  "name": "test",
+  "name": "Swap-v2",
   "version": "1.0.0",
-  "description": "",
+  "description": "Decentralized Exchange on Flow",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest --coverage"
   },
   "keywords": [],
   "author": "",

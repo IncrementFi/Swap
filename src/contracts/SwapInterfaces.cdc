@@ -25,7 +25,7 @@ pub contract interface SwapInterfaces {
         pub fun deposit(pairAddr: Address, lpTokenVault: @FungibleToken.Vault)
         pub fun getCollectionLength(): Int
         pub fun getLpTokenBalance(pairAddr: Address): UFix64
-        pub fun getAllLiquidityPairAddrs(): [Address]
-        pub fun getLiquidityPairAddrsSliced(from: UInt64, to: UInt64): [Address]
+        pub fun getAllLPTokens(): [Address]
+        pub fun getSlicedLPTokens(from: UInt64, to: UInt64): [Address]
     }
 }

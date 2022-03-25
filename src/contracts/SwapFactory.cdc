@@ -14,13 +14,15 @@ pub contract SwapFactory {
     /// Account which has deployed pair template contract
     pub var pairContractTemplateAddress: Address
 
-    /// All pairs in array
-    access(self) let pairArr: [Address]
+    /// All pairs' address array
+    access(self) let pairs: [Address]
     /// pairMap[token0Identifier][token1Identifier] == pairMap[token1Identifier][token0Identifier]
     access(self) let pairMap: { String: {String: Address} }
 
     /// Events
     pub event PairCreated(token0Key: String, token1Key: String, pairAddress: Address, numPairs: Int)
+    pub event PairTemplateAddressChanged(oldTemplate: Address, newTemplate: Address)
+    pub event FeeToAddressChanged(oldFeeTo: Address?, newFeeTo: Address?)
 
     /// Fee receiver address
     pub var feeTo: Address?
@@ -64,8 +66,6 @@ pub contract SwapFactory {
         /// Add initial flow tokens for deployment
         if storageFeeVault != nil {
             pairAccount.getCapability(/public/flowTokenReceiver).borrow<&{FungibleToken.Receiver}>()!.deposit(from: <-storageFeeVault!)
-        } else {
-            destroy storageFeeVault
         }
 
         let pairTemplateContract = getAccount(self.pairContractTemplateAddress).contracts.get(name: "SwapPair")!
@@ -89,10 +89,10 @@ pub contract SwapFactory {
         self.pairMap[token0Key]!.insert(key: token1Key, pairAddress)
         self.pairMap[token1Key]!.insert(key: token0Key, pairAddress)
 
-        self.pairArr.append(pairAddress)
+        self.pairs.append(pairAddress)
 
         /// event
-        emit PairCreated(token0Key: token0Key, token1Key: token1Key, pairAddress: pairAddress, numPairs: self.pairArr.length)
+        emit PairCreated(token0Key: token0Key, token1Key: token1Key, pairAddress: pairAddress, numPairs: self.pairs.length)
 
         return pairAddress
     }
@@ -121,7 +121,7 @@ pub contract SwapFactory {
             assert(
                 lpTokenVault.getType() == pairPublicRef.getLpTokenVaultType(), message:
                 SwapError.ErrorEncode(
-                    msg: "Mis match lptoken vault in deposit",
+                    msg: "Input token vault type mismatch with pair lptoken vault",
                     err: SwapError.ErrorCode.MISMATCH_LPTOKEN_VAULT
                 )
             )
@@ -138,7 +138,7 @@ pub contract SwapFactory {
             pre {
                 self.lpTokenVaults.containsKey(pairAddr):
                     SwapError.ErrorEncode(
-                        msg: "There is no liquidity in pair ".concat(pairAddr.toString()),
+                        msg: "Haven't provided liquidity to pair ".concat(pairAddr.toString()),
                         err: SwapError.ErrorCode.INVALID_PARAMETERS
                     )
             }
@@ -164,30 +164,25 @@ pub contract SwapFactory {
             return 0.0
         }
 
-        pub fun getAllLiquidityPairAddrs(): [Address] {
+        pub fun getAllLPTokens(): [Address] {
             return self.lpTokenVaults.keys
         }
 
-        pub fun getLiquidityPairAddrsSliced(from: UInt64, to: UInt64): [Address] {
+        pub fun getSlicedLPTokens(from: UInt64, to: UInt64): [Address] {
             pre {
                 from <= to && from < UInt64(self.getCollectionLength()):
                     SwapError.ErrorEncode(
-                        msg: "Index out of range",
+                        msg: "from index out of range",
                         err: SwapError.ErrorCode.INVALID_PARAMETERS
                     )
             }
             let pairLen = UInt64(self.getCollectionLength())
+            let endIndex = to >= pairLen ? pairLen - 1 : to
             var curIndex = from
-            var endIndex = to
-            if endIndex == 0 || endIndex == UInt64.max {
-                endIndex = pairLen - 1
-            }
-
-            // Array.slice function does not sopported now
+            // Array.slice() is not supported yet.
             let list: [Address] = []
-            let lpTokenVaultsKeys = self.lpTokenVaults.keys
-            while curIndex <= endIndex && curIndex < pairLen {
-                list.append(lpTokenVaultsKeys[curIndex])
+            while curIndex <= endIndex {
+                list.append(self.lpTokenVaults.keys[curIndex])
                 curIndex = curIndex + 1
             }
             return list
@@ -213,43 +208,39 @@ pub contract SwapFactory {
         return getAccount(pairAddr!).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!.getPairInfo()
     }
 
-    pub fun getPairArrLength(): Int {
-        return self.pairArr.length
+    pub fun getAllPairsLength(): Int {
+        return self.pairs.length
     }
 
-    /// @Param to - 0 or UInt64.max
-    pub fun getPairArrAddr(from: UInt64, to: UInt64): [Address] {
+    /// Get sliced array of pair addresses (inclusive for both indexes)
+    pub fun getSlicedPairs(from: UInt64, to: UInt64): [Address] {
         pre {
-            from <= to && from < UInt64(self.pairArr.length):
+            from <= to && from < UInt64(self.pairs.length):
                 SwapError.ErrorEncode(
-                    msg: "Index out of range",
+                    msg: "from index out of range",
                     err: SwapError.ErrorCode.INVALID_PARAMETERS
                 )
         }
-        let pairLen = UInt64(self.pairArr.length)
+        let pairLen = UInt64(self.pairs.length)
+        let endIndex = to >= pairLen ? pairLen - 1 : to
         var curIndex = from
-        var endIndex = to
-        if endIndex == 0 || endIndex == UInt64.max {
-            endIndex = pairLen-1
-        }
-
-        /// Array.slice function does not sopported now
+        // Array.slice() is not supported yet.
         let list: [Address] = []
-        while curIndex <= endIndex && curIndex < pairLen {
-            list.append(self.pairArr[curIndex])
+        while curIndex <= endIndex {
+            list.append(self.pairs[curIndex])
             curIndex = curIndex + 1
         }
         return list
     }
 
-    pub fun getPairArrInfo(from: UInt64, to: UInt64): [AnyStruct] {
-        let pairAddrs: [Address] = self.getPairArrAddr(from: from, to: to)
-        let len = pairAddrs.length
+    /// Get sliced array of PairInfos (inclusive for both indexes)
+    pub fun getSlicedPairInfos(from: UInt64, to: UInt64): [AnyStruct] {
+        let pairSlice: [Address] = self.getSlicedPairs(from: from, to: to)
         var i = 0
         var res: [AnyStruct] = []
-        while(i < len) {
+        while(i < pairSlice.length) {
             res.append(
-                getAccount(pairAddrs[i]).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!.getPairInfo()
+                getAccount(pairSlice[i]).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!.getPairInfo()
             )
             i = i + 1
         }
@@ -257,20 +248,22 @@ pub contract SwapFactory {
         return res
     }
 
-    /// Admin
+    /// Admin function to update feeTo and pair template
     ///
     pub resource Admin {
         pub fun setPairContractTemplateAddress(newAddr: Address) {
+            emit PairTemplateAddressChanged(oldTemplate: SwapFactory.pairContractTemplateAddress, newTemplate: newAddr)
             SwapFactory.pairContractTemplateAddress = newAddr
         }
         pub fun setFeeTo(feeToAddr: Address) {
+            emit FeeToAddressChanged(oldFeeTo: SwapFactory.feeTo, newFeeTo: feeToAddr)
             SwapFactory.feeTo = feeToAddr
         }
     }
 
     init(pairTemplate: Address) {
         self.pairContractTemplateAddress = pairTemplate
-        self.pairArr = []
+        self.pairs = []
         self.pairMap = {}
         self.feeTo = nil
         self._reservedFields = {}

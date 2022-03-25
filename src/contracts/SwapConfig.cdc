@@ -10,11 +10,9 @@ pub contract SwapConfig {
     pub var LpTokenCollectionStoragePath: StoragePath
     pub var LpTokenCollectionPublicPath: PublicPath
 
-    /// Scale factor applied to fixed point number calculation. For example: 1e18 means the actual baseRatePerBlock should
-    /// be baseRatePerBlock / 1e18. Note: The use of scale factor is due to fixed point number in cadence is only precise to 1e-8:
+    /// Scale factor applied to fixed point number calculation.
+    /// Note: The use of scale factor is due to fixed point number in cadence is only precise to 1e-8:
     /// https://docs.onflow.org/cadence/language/values-and-types/#fixed-point-numbers
-    /// It'll be truncated and lose accuracy if not scaled up. e.g.: APR 20% (0.2) => 0.2 / 12614400 blocks => 1.5855e-8
-    ///  -> truncated as 1e-8.
     pub let scaleFactor: UInt256
     /// 100_000_000.0, i.e. 1.0e8
     pub let ufixScale: UFix64
@@ -61,8 +59,7 @@ pub contract SwapConfig {
     ///
     pub fun sqrt(_ x: UInt256): UInt256 {
         var res: UInt256 = 0
-        var one: UInt256 = 1_000_000_000_000_000_000 // UInt256(1.0)
-        var min: UInt256 = 10_000_000_000 // UInt256(0.00000001)
+        var one: UInt256 = self.scaleFactor
         if (x > 0) {
             var x0 = x
             var mid = (x + one) / 2
@@ -137,7 +134,7 @@ pub contract SwapConfig {
         self.scaleFactor = 1_000_000_000_000_000_000
         /// 1.0e8
         self.ufixScale = 100_000_000.0
-
+        /// 1.0e-8
         self.ufix64NonZeroMin = 0.00000001
 
         self._reservedFields = {}
