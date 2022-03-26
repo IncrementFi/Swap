@@ -81,6 +81,8 @@ pub contract SwapFactory {
         /// Add initial flow tokens for deployment
         if storageFeeVault != nil {
             pairAccount.getCapability(/public/flowTokenReceiver).borrow<&{FungibleToken.Receiver}>()!.deposit(from: <-storageFeeVault!)
+        } else {
+            destroy storageFeeVault
         }
 
         let pairTemplateContract = getAccount(self.pairContractTemplateAddress).contracts.get(name: "SwapPair")!

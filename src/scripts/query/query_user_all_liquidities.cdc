@@ -9,7 +9,7 @@ pub fun main(userAddr: Address): {Address: UFix64} {
         return {}
     }
     let lpTokenCollectionRef = lpTokenCollectionCap.borrow()!
-    let liquidityPairAddrs = lpTokenCollectionRef.getAllLiquidityPairAddrs()
+    let liquidityPairAddrs = lpTokenCollectionRef.getAllLPTokens()
     var res: {Address: UFix64} = {}
     for pairAddr in liquidityPairAddrs {
         var lpTokenAmount = lpTokenCollectionRef.getLpTokenBalance(pairAddr: pairAddr)
