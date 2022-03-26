@@ -137,7 +137,7 @@ pub contract SwapRouter {
         amountOut: UFix64,
         tokenKeyPath: [String],
         deadline: UFix64
-    ): @[FungibleToken.Vault; 2] {
+    ): @[FungibleToken.Vault] {
         let amountInMax = vaultIn.balance
         let amounts = self.getAmountsIn(amountOut: amountOut, tokenKeyPath: tokenKeyPath)
         assert( amounts[0] <= amountInMax, message:

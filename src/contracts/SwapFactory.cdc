@@ -19,7 +19,8 @@ pub contract SwapFactory {
     /// pairMap[token0Identifier][token1Identifier] == pairMap[token1Identifier][token0Identifier]
     access(self) let pairMap: { String: {String: Address} }
 
-    /// This key will be revoked in the future
+    /// Pair admin key might be attached in the beginning for the sake of safety reasons,
+    /// but it'll be revoked in future for a pure decentralized exchange.
     pub var pairAccountPublicKey: String?
 
     /// Fee receiver address
@@ -32,7 +33,7 @@ pub contract SwapFactory {
     pub event PairCreated(token0Key: String, token1Key: String, pairAddress: Address, numPairs: Int)
     pub event PairTemplateAddressChanged(oldTemplate: Address, newTemplate: Address)
     pub event FeeToAddressChanged(oldFeeTo: Address?, newFeeTo: Address?)
-
+    pub event PairAccountPublicKeyChanged(oldPublicKey: String?, newPublicKey: String?)
 
     /// Create Pair
     ///
@@ -43,7 +44,7 @@ pub contract SwapFactory {
         pre {
             token0Vault.balance == 0.0 && token1Vault.balance == 0.0:
                 SwapError.ErrorEncode(
-                    msg: "There is no need to provide liquidity when creating a pool",
+                    msg: "SwapFactory: no need to provide liquidity when creating a pool",
                     err: SwapError.ErrorCode.INVALID_PARAMETERS
                 )
         }
@@ -53,14 +54,14 @@ pub contract SwapFactory {
         assert(
             token0Key != token1Key, message:
                 SwapError.ErrorEncode(
-                    msg: "Identical FungibleTokens",
+                    msg: "SwapFactory: identical FungibleTokens",
                     err: SwapError.ErrorCode.CANNOT_CREATE_PAIR_WITH_SAME_TOKENS
                 )
         )
         assert(
             self.getPairAddress(token0Key: token0Key, token1Key: token1Key) == nil, message:
                 SwapError.ErrorEncode(
-                    msg: "Pair already exists",
+                    msg: "SwapFactory: pair already exists",
                     err: SwapError.ErrorCode.ADD_PAIR_DUPLICATED
                 )
         )
@@ -93,8 +94,6 @@ pub contract SwapFactory {
             token0Vault: <-token0Vault,
             token1Vault: <-token1Vault
         )
-        destroy token0Vault
-        destroy token1Vault
         
         /// insert pair map
         if (self.pairMap.containsKey(token0Key) == false) {
@@ -134,11 +133,17 @@ pub contract SwapFactory {
         }
 
         pub fun deposit(pairAddr: Address, lpTokenVault: @FungibleToken.Vault) {
+            pre {
+                lpTokenVault.balance > 0.0: SwapError.ErrorEncode(
+                    msg: "LpTokenCollection: deposit empty lptoken vault",
+                    err: SwapError.ErrorCode.INVALID_PARAMETERS
+                )
+            }
             let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!
             assert(
                 lpTokenVault.getType() == pairPublicRef.getLpTokenVaultType(), message:
                 SwapError.ErrorEncode(
-                    msg: "Input token vault type mismatch with pair lptoken vault",
+                    msg: "LpTokenCollection: input token vault type mismatch with pair lptoken vault",
                     err: SwapError.ErrorCode.MISMATCH_LPTOKEN_VAULT
                 )
             )
@@ -155,7 +160,7 @@ pub contract SwapFactory {
             pre {
                 self.lpTokenVaults.containsKey(pairAddr):
                     SwapError.ErrorEncode(
-                        msg: "Haven't provided liquidity to pair ".concat(pairAddr.toString()),
+                        msg: "LpTokenCollection: haven't provided liquidity to pair ".concat(pairAddr.toString()),
                         err: SwapError.ErrorCode.INVALID_PARAMETERS
                     )
             }
@@ -276,8 +281,9 @@ pub contract SwapFactory {
             emit FeeToAddressChanged(oldFeeTo: SwapFactory.feeTo, newFeeTo: feeToAddr)
             SwapFactory.feeTo = feeToAddr
         }
-        pub fun setPairAccountPublicKey(key: String?) {
-            SwapFactory.pairAccountPublicKey = key
+        pub fun setPairAccountPublicKey(publicKey: String?) {
+            emit PairAccountPublicKeyChanged(oldPublicKey: SwapFactory.pairAccountPublicKey, newPublicKey: publicKey)
+            SwapFactory.pairAccountPublicKey = publicKey
         }
     }
 
