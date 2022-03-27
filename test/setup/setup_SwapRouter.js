@@ -172,8 +172,8 @@ export const splitSwapExactTokensForTokens = async(
     code = code.replaceAll("tokenOutReceiverPath", tokenOutReceiverPath)
     code = code.replaceAll("tokenOutBalancePath", tokenOutBalancePath)
 
-    code = code.replaceAll("Token1Addr", await getTokenAddrByName(tokenOutName))
-    code = code.replaceAll("Token1Name", tokenOutName)
+    code = code.replaceAll("TokenOutAddr", await getTokenAddrByName(tokenOutName))
+    code = code.replaceAll("TokenOutName", tokenOutName)
 
     let curTimestamp = (await queryTimestamp())[0]
 
@@ -226,8 +226,8 @@ export const splitSwapExactTokensForTokens = async(
     code = code.replaceAll("tokenOutReceiverPath", tokenOutReceiverPath)
     code = code.replaceAll("tokenOutBalancePath", tokenOutBalancePath)
 
-    code = code.replaceAll("Token1Addr", await getTokenAddrByName(tokenOutName))
-    code = code.replaceAll("Token1Name", tokenOutName)
+    code = code.replaceAll("TokenOutAddr", await getTokenAddrByName(tokenOutName))
+    code = code.replaceAll("TokenOutName", tokenOutName)
 
     let curTimestamp = (await queryTimestamp())[0]
 

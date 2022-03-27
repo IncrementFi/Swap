@@ -1,4 +1,4 @@
-import Token1Name from Token1Addr
+import TokenOutName from TokenOutAddr
 
 import FungibleToken from "../../contracts/tokens/FungibleToken.cdc"
 import SwapRouter from "../../contracts/SwapRouter.cdc"
@@ -24,9 +24,9 @@ transaction(
 
         var tokenOutReceiverRef = userAccount.borrow<&FungibleToken.Vault>(from: tokenOutVaultPath)
         if tokenOutReceiverRef == nil {
-            userAccount.save(<- Token1Name.createEmptyVault(), to: tokenOutVaultPath)
-            userAccount.link<&Token1Name.Vault{FungibleToken.Receiver}>(tokenOutReceiverPath, target: tokenOutVaultPath)
-            userAccount.link<&Token1Name.Vault{FungibleToken.Balance}>(tokenOutBalancePath, target: tokenOutVaultPath)
+            userAccount.save(<- TokenOutName.createEmptyVault(), to: tokenOutVaultPath)
+            userAccount.link<&TokenOutName.Vault{FungibleToken.Receiver}>(tokenOutReceiverPath, target: tokenOutVaultPath)
+            userAccount.link<&TokenOutName.Vault{FungibleToken.Balance}>(tokenOutBalancePath, target: tokenOutVaultPath)
 
             tokenOutReceiverRef = userAccount.borrow<&FungibleToken.Vault>(from: tokenOutVaultPath)
         }

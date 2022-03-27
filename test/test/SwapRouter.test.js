@@ -57,7 +57,7 @@ describe("Swap Pair Testsuites", () => {
     afterEach(async () => {
         return emulator.stop();
     });
-    /*
+
     it("Split Swap Exact Tokens for Tokens - one swap", async () => {
         const liquidityProvider = await getAccountAddress("liquidityProvider");
         const trader = await getAccountAddress("trader");
@@ -272,7 +272,6 @@ describe("Swap Pair Testsuites", () => {
             "0.00492105"
         )
     });
-    */
 
     it("Swap Tokens for Exact Tokens - one swap", async () => {
         const liquidityProvider = await getAccountAddress("liquidityProvider");
