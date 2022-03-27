@@ -2,12 +2,11 @@ import Token1Name from Token1Addr
 
 import FungibleToken from "../../contracts/tokens/FungibleToken.cdc"
 import SwapRouter from "../../contracts/SwapRouter.cdc"
-import SwapError from "../../contracts/SwapError.cdc"
 
 transaction(
-    tokenKeyPathFlat: [String],
-    amountOutSplit: [UFix64],
+    tokenKeyPath: [String],
     amountInMax: UFix64,
+    exactAmountOut: UFix64,
     deadline: UFix64,
 
     tokenInVaultPath: StoragePath,
@@ -16,17 +15,10 @@ transaction(
     tokenOutBalancePath: PublicPath,
 ) {
     prepare(userAccount: AuthAccount) {
-        assert( deadline >= getCurrentBlock().timestamp, message:
-            SwapError.ErrorEncode(
-                msg: "EXPIRED",
-                err: SwapError.ErrorCode.EXPIRED
-            )
-        )
-
-        var len = tokenKeyPathFlat.length
-
-        let tokenInKey = tokenKeyPathFlat[0]
-        let tokenOutKey = tokenKeyPathFlat[len-1]
+        
+        var len = tokenKeyPath.length
+        let tokenInKey = tokenKeyPath[0]
+        let tokenOutKey = tokenKeyPath[len-1]
 
         var tokenOutAmountTotal = 0.0
 
@@ -38,48 +30,22 @@ transaction(
 
             tokenOutReceiverRef = userAccount.borrow<&FungibleToken.Vault>(from: tokenOutVaultPath)
         }
+        let vaultInRef = userAccount.borrow<&FungibleToken.Vault>(from: tokenInVaultPath)
+        let vaultInMax <- vaultInRef!.withdraw(amount: amountInMax)
 
-        var pathIndex = 0
-        var i = 0
-        var path: [String] = []
-        var amountInTotal = 0.0
-        while(i < len) {
-            var curTokenKey = tokenKeyPathFlat[i]
-            path.append(curTokenKey)
-            if (curTokenKey == tokenOutKey) {
-                log(path)
-
-                var tokenOutExpectAmount = amountOutSplit[pathIndex]
-                let amounts = SwapRouter.getAmountsIn(amountOut: tokenOutExpectAmount, tokenKeyPath: path)
-                var tokenInAmount = amounts[0]
-                amountInTotal = amountInTotal + tokenInAmount
-
-                log("in ".concat(tokenInAmount.toString()))
-
-                let tokenInVault <- userAccount.borrow<&FungibleToken.Vault>(from: tokenInVaultPath)!.withdraw(amount: tokenInAmount)
-
-                let tokenOutVault <- SwapRouter.swapWithPath(vaultIn: <- tokenInVault, tokenKeyPath: path, exactAmounts: amounts)
-
-                log("out ".concat(tokenOutVault.balance.toString()))
-
-                tokenOutAmountTotal = tokenOutAmountTotal + tokenOutVault.balance
-                tokenOutReceiverRef!.deposit(from: <- tokenOutVault)
-
-                path = []
-                pathIndex = pathIndex + 1
-            }
-            i = i + 1
-        }
-        
-        log("total out ".concat(tokenOutAmountTotal.toString()))
-        log("max in ".concat(amountInMax.toString()))
-
-        assert( amountInTotal <= amountInMax, message:
-            SwapError.ErrorEncode(
-                msg: "SLIPPAGE_OFFSET_TOO_LARGE",
-                err: SwapError.ErrorCode.SLIPPAGE_OFFSET_TOO_LARGE
-            )
+        let swapResVault <- SwapRouter.swapTokensForExactTokens(
+            vaultInMax: <-vaultInMax,
+            exactAmountOut: exactAmountOut,
+            tokenKeyPath: tokenKeyPath,
+            deadline: deadline
         )
+        let vaultOut <- swapResVault.removeLast()
+        let vaultInLeft <- swapResVault.removeFirst()
+        destroy swapResVault
 
+        log("out ".concat(vaultOut.balance.toString()))
+        log("left ".concat(vaultInLeft.balance.toString()))
+        tokenOutReceiverRef!.deposit(from: <-vaultOut)
+        vaultInRef!.deposit(from: <-vaultInLeft)
     }
 }

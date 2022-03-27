@@ -54,7 +54,7 @@ export const swapExactTokensForTokens = async(
 
     const cadenceRootPath = "../../src";
     const basePath = path.resolve(__dirname, cadenceRootPath);
-    var code = fs.readFileSync(basePath+"/transactions/user/swap_exact_tokens_for_tokens.template", "utf-8");
+    var code = fs.readFileSync(basePath+"/transactions/user/split_swap_exact_tokens_for_tokens.template", "utf-8");
     code = code.replace("tokenInVaultPath: StoragePath,", "")
     code = code.replace("tokenOutVaultPath: StoragePath,", "")
     code = code.replace("tokenOutReceiverPath: PublicPath,", "")
@@ -108,7 +108,7 @@ export const swapExactTokensForTokens = async(
 
     const cadenceRootPath = "../../src";
     const basePath = path.resolve(__dirname, cadenceRootPath);
-    var code = fs.readFileSync(basePath+"/transactions/user/swap_tokens_for_exact_tokens.template", "utf-8");
+    var code = fs.readFileSync(basePath+"/transactions/user/split_swap_tokens_for_exact_tokens.template", "utf-8");
     code = code.replace("tokenInVaultPath: StoragePath,", "")
     code = code.replace("tokenOutVaultPath: StoragePath,", "")
     code = code.replace("tokenOutReceiverPath: PublicPath,", "")

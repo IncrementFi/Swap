@@ -91,7 +91,7 @@ pub contract SwapRouter {
     /// SwapExactTokensForTokens
     ///
     /// Make sure the exact amountIn in swap start
-    /// @Param  - vaultIn:      Vault with exact amountIn
+    /// @Param  - exactVaultIn:      Vault with exact amountIn
     /// @Param  - amountOutMin: Desired minimum amountOut if slippage occurs
     /// @Param  - tokenKeyPath: Chained swap
     ///                         e.g. if swap from FUSD to USDC through FlowToken
@@ -100,12 +100,12 @@ pub contract SwapRouter {
     /// @Return - Vault:        Swap out vault
     ///
     pub fun swapExactTokensForTokens(
-        vaultIn: @FungibleToken.Vault,
+        exactVaultIn: @FungibleToken.Vault,
         amountOutMin: UFix64,
         tokenKeyPath: [String],
         deadline: UFix64
     ): @FungibleToken.Vault {
-        let amounts = self.getAmountsOut(amountIn: vaultIn.balance, tokenKeyPath: tokenKeyPath)
+        let amounts = self.getAmountsOut(amountIn: exactVaultIn.balance, tokenKeyPath: tokenKeyPath)
         assert( amounts[amounts.length-1] >= amountOutMin, message:
             SwapError.ErrorEncode(
                 msg: "SLIPPAGE_OFFSET_TOO_LARGE",
@@ -119,27 +119,27 @@ pub contract SwapRouter {
             )
         )
         
-        return <- self.swapWithPath(vaultIn: <-vaultIn, tokenKeyPath: tokenKeyPath, exactAmounts: nil)
+        return <- self.swapWithPath(vaultIn: <-exactVaultIn, tokenKeyPath: tokenKeyPath, exactAmounts: nil)
     }
 
     /// SwapTokensForExactTokens
     ///
-    /// @Param  - vaultIn:      Vault with exact amountIn
-    /// @Param  - amountOut:    Make sure the exact amountOut in swap end
-    /// @Param  - tokenKeyPath: Chained swap
-    ///                         e.g. if swap from FUSD to USDC through FlowToken
-    ///                              [A.f8d6e0586b0a20c7.FUSD, A.f8d6e0586b0a20c7.FlowToken, A.f8d6e0586b0a20c7.USDC]
-    /// @Param  - deadline:     The timeout block timestamp for the transaction
+    /// @Param  - vaultInMax:     Vault with enough amount to swap
+    /// @Param  - exactAmountOut: Make sure the exact amountOut in swap end
+    /// @Param  - tokenKeyPath:   Chained swap
+    ///                           e.g. if swap from FUSD to USDC through FlowToken
+    ///                                [A.f8d6e0586b0a20c7.FUSD, A.f8d6e0586b0a20c7.FlowToken, A.f8d6e0586b0a20c7.USDC]
+    /// @Param  - deadline:       The timeout block timestamp for the transaction
     /// @Return - [OutVault, RemainVault]
     ///
     pub fun swapTokensForExactTokens(
-        vaultIn: @FungibleToken.Vault,
-        amountOut: UFix64,
+        vaultInMax: @FungibleToken.Vault,
+        exactAmountOut: UFix64,
         tokenKeyPath: [String],
         deadline: UFix64
     ): @[FungibleToken.Vault] {
-        let amountInMax = vaultIn.balance
-        let amounts = self.getAmountsIn(amountOut: amountOut, tokenKeyPath: tokenKeyPath)
+        let amountInMax = vaultInMax.balance
+        let amounts = self.getAmountsIn(amountOut: exactAmountOut, tokenKeyPath: tokenKeyPath)
         assert( amounts[0] <= amountInMax, message:
             SwapError.ErrorEncode(
                 msg: "SLIPPAGE_OFFSET_TOO_LARGE",
@@ -153,9 +153,9 @@ pub contract SwapRouter {
             )
         )
         
-        let vaultInExact <- vaultIn.withdraw(amount: amounts[0])
+        let vaultInExact <- vaultInMax.withdraw(amount: amounts[0])
 
-        return <-[<-self.swapWithPath(vaultIn: <-vaultInExact, tokenKeyPath: tokenKeyPath, exactAmounts: amounts), <-vaultIn]
+        return <-[<-self.swapWithPath(vaultIn: <-vaultInExact, tokenKeyPath: tokenKeyPath, exactAmounts: amounts), <-vaultInMax]
     }
 
     /// SwapWithPath
