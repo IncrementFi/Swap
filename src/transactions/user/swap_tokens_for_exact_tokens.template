@@ -39,8 +39,8 @@ transaction(
             tokenKeyPath: tokenKeyPath,
             deadline: deadline
         )
-        let vaultOut <- swapResVault.removeLast()
-        let vaultInLeft <- swapResVault.removeFirst()
+        let vaultOut <- swapResVault.removeFirst()
+        let vaultInLeft <- swapResVault.removeLast()
         destroy swapResVault
 
         log("out ".concat(vaultOut.balance.toString()))
