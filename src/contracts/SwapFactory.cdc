@@ -68,11 +68,11 @@ pub contract SwapFactory {
         assert(
             accountCreationFee.balance >= 0.001, message:
             SwapError.ErrorEncode(
-                msg: "Insufficient account creation fee",
+                msg: "SwapFactory: insufficient account creation fee",
                 err: SwapError.ErrorCode.INVALID_PARAMETERS
             )
         )
-        /// Add initial flow tokens for deployment
+        /// Deposit account creation fee into factory account, which then acts as payer of account creation
         self.account.getCapability(/public/flowTokenReceiver).borrow<&{FungibleToken.Receiver}>()!.deposit(from: <-accountCreationFee)
 
         let pairAccount = AuthAccount(payer: self.account)
