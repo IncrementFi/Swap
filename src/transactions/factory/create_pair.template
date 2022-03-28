@@ -1,16 +1,15 @@
 import Token0Name from Token0Addr
 import Token1Name from Token1Addr
 import FlowToken from "../../contracts/tokens/FlowToken.cdc"
-import FlowServiceAccount from "../../contracts/env/FlowServiceAccount.cdc"
 import SwapFactory from "../../contracts/SwapFactory.cdc"
 
 /// deploy code copied by a deployed contract
 transaction() {
     prepare(userAccount: AuthAccount) {
-        let accountCreationFeeVault <- userAccount.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)!.withdraw(amount: FlowServiceAccount.accountCreationFee)
+        let accountCreationFeeVault <- userAccount.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)!.withdraw(amount: 0.001)
     
         let token0Vault <- Token0Name.createEmptyVault()
         let token1Vault <- Token1Name.createEmptyVault()
-        SwapFactory.createPair(token0Vault: <-token0Vault, token1Vault: <-token1Vault, accountCreationFee: <-accountCreationFeeVault, storageFeeVault: nil)
+        SwapFactory.createPair(token0Vault: <-token0Vault, token1Vault: <-token1Vault, accountCreationFee: <-accountCreationFeeVault)
     }
 }

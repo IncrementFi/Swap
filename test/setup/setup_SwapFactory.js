@@ -29,8 +29,8 @@ export const createPair = async(tokenName0, tokenName1) => {
                 let token0Vault <- Token0Name.createEmptyVault()
                 let token1Vault <- Token1Name.createEmptyVault()
                 
-                let storageFeeVault <- userAccount.borrow<&FungibleToken.Vault>(from: /storage/flowTokenVault)!.withdraw(amount: 0.001)
-                SwapFactory.createPair(token0Vault: <-token0Vault, token1Vault: <-token1Vault, storageFeeVault: <-storageFeeVault)
+                let accountCreationFee <- userAccount.borrow<&FungibleToken.Vault>(from: /storage/flowTokenVault)!.withdraw(amount: 0.001)
+                SwapFactory.createPair(token0Vault: <-token0Vault, token1Vault: <-token1Vault, accountCreationFee: <-accountCreationFee)
             }
         }
     `
