@@ -16,9 +16,9 @@ transaction(mintAmount: UFix64) {
     prepare(signer: AuthAccount) {
         log("Transaction Start --------------- mint all tokens")
         
-        var vaultStoragePath = /storage/busdVault
-        var vaultReceiverPath = /public/busdReceiver
-        var vaultBalancePath = /public/busdBalance
+        var vaultStoragePath = /storage/test_busdVault
+        var vaultReceiverPath = /public/test_busdReceiver
+        var vaultBalancePath = /public/test_busdBalance
         var busdVaultRef = signer.borrow<&BUSD.Vault>(from: vaultStoragePath)
         if busdVaultRef == nil {
             destroy <- signer.load<@AnyResource>(from: vaultStoragePath)
@@ -31,9 +31,9 @@ transaction(mintAmount: UFix64) {
         busdVaultRef!.deposit(from: <-BUSD.test_minter.mintTokens(amount: mintAmount))
         log("mint ".concat(busdVaultRef!.balance.toString()))
         /////////////////
-        vaultStoragePath = /storage/fusdVault
-        vaultReceiverPath = /public/fusdReceiver
-        vaultBalancePath = /public/fusdBalance
+        vaultStoragePath = /storage/test_fusdVault
+        vaultReceiverPath = /public/test_fusdReceiver
+        vaultBalancePath = /public/test_fusdBalance
         var fusdVaultRef = signer.borrow<&FUSD.Vault>(from: vaultStoragePath)
         if fusdVaultRef == nil {
             destroy <- signer.load<@AnyResource>(from: vaultStoragePath)
@@ -46,9 +46,9 @@ transaction(mintAmount: UFix64) {
         fusdVaultRef!.deposit(from: <-FUSD.test_minter.mintTokens(amount: mintAmount))
         log("mint ".concat(fusdVaultRef!.balance.toString()))
         /////////////////
-        vaultStoragePath = /storage/usdcVault
-        vaultReceiverPath = /public/usdcReceiver
-        vaultBalancePath = /public/usdcBalance
+        vaultStoragePath = /storage/test_usdcVault
+        vaultReceiverPath = /public/test_usdcReceiver
+        vaultBalancePath = /public/test_usdcBalance
         var usdcVaultRef = signer.borrow<&USDC.Vault>(from: vaultStoragePath)
         if usdcVaultRef == nil {
             destroy <- signer.load<@AnyResource>(from: vaultStoragePath)
@@ -61,9 +61,9 @@ transaction(mintAmount: UFix64) {
         usdcVaultRef!.deposit(from: <-USDC.test_minter.mintTokens(amount: mintAmount))
         log("mint ".concat(usdcVaultRef!.balance.toString()))
         /////////////////
-        vaultStoragePath = /storage/usdtVault
-        vaultReceiverPath = /public/usdtReceiver
-        vaultBalancePath = /public/usdtBalance
+        vaultStoragePath = /storage/test_usdtVault
+        vaultReceiverPath = /public/test_usdtReceiver
+        vaultBalancePath = /public/test_usdtBalance
         var usdtVaultRef = signer.borrow<&USDT.Vault>(from: vaultStoragePath)
         if usdtVaultRef == nil {
             destroy <- signer.load<@AnyResource>(from: vaultStoragePath)
@@ -76,9 +76,9 @@ transaction(mintAmount: UFix64) {
         usdtVaultRef!.deposit(from: <-USDT.test_minter.mintTokens(amount: mintAmount))
         log("mint ".concat(usdtVaultRef!.balance.toString()))
         /////////////////
-        vaultStoragePath = /storage/wflowVault
-        vaultReceiverPath = /public/wflowReceiver
-        vaultBalancePath = /public/wflowBalance
+        vaultStoragePath = /storage/test_wflowVault
+        vaultReceiverPath = /public/test_wflowReceiver
+        vaultBalancePath = /public/test_wflowBalance
         var wflowVaultRef = signer.borrow<&wFlow.Vault>(from: vaultStoragePath)
         if wflowVaultRef == nil {
             destroy <- signer.load<@AnyResource>(from: vaultStoragePath)
@@ -91,9 +91,9 @@ transaction(mintAmount: UFix64) {
         wflowVaultRef!.deposit(from: <-wFlow.test_minter.mintTokens(amount: mintAmount))
         log("mint ".concat(wflowVaultRef!.balance.toString()))
         /////////////////
-        vaultStoragePath = /storage/bLTVault
-        vaultReceiverPath = /public/bLTReceiver
-        vaultBalancePath = /public/bLTBalance
+        vaultStoragePath = /storage/test_bltVault
+        vaultReceiverPath = /public/test_bltReceiver
+        vaultBalancePath = /public/test_bltBalance
         var bLTVaultRef = signer.borrow<&BLT.Vault>(from: vaultStoragePath)
         if bLTVaultRef == nil {
             destroy <- signer.load<@AnyResource>(from: vaultStoragePath)

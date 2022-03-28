@@ -6,7 +6,9 @@ import SwapFactory from "../../contracts/SwapFactory.cdc"
 /// deploy code copied by a deployed contract
 transaction() {
     prepare(userAccount: AuthAccount) {
-        let accountCreationFeeVault <- userAccount.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)!.withdraw(amount: 0.001)
+        let flowVaultRef = userAccount.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)!
+        assert(flowVaultRef.balance >= 0.002, message: "Insufficient flow to create pair.")
+        let accountCreationFeeVault <- flowVaultRef.withdraw(amount: 0.001)
     
         let token0Vault <- Token0Name.createEmptyVault()
         let token1Vault <- Token1Name.createEmptyVault()

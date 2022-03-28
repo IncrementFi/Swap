@@ -65,6 +65,15 @@ pub contract SwapFactory {
                     err: SwapError.ErrorCode.ADD_PAIR_DUPLICATED
                 )
         )
+        assert(
+            accountCreationFee.balance >= 0.001, message:
+            SwapError.ErrorEncode(
+                msg: "Insufficient account creation fee",
+                err: SwapError.ErrorCode.INVALID_PARAMETERS
+            )
+        )
+        /// Add initial flow tokens for deployment
+        self.account.getCapability(/public/flowTokenReceiver).borrow<&{FungibleToken.Receiver}>()!.deposit(from: <-accountCreationFee)
 
         let pairAccount = AuthAccount(payer: self.account)
         if (self.pairAccountPublicKey != nil) {
@@ -77,16 +86,6 @@ pub contract SwapFactory {
                 weight: 1000.0
             )
         }
-
-        assert(
-            accountCreationFee.balance >= 0.001, message:
-            SwapError.ErrorEncode(
-                msg: "Insufficient account creation fee",
-                err: SwapError.ErrorCode.INVALID_PARAMETERS
-            )
-        )
-        /// Add initial flow tokens for deployment
-        self.account.getCapability(/public/flowTokenReceiver).borrow<&{FungibleToken.Receiver}>()!.deposit(from: <-accountCreationFee)
 
         let pairAddress = pairAccount.address
         
