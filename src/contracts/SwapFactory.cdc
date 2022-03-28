@@ -9,6 +9,7 @@ import FungibleToken from "./tokens/FungibleToken.cdc"
 import SwapError from "./SwapError.cdc"
 import SwapConfig from "./SwapConfig.cdc"
 import SwapInterfaces from "./SwapInterfaces.cdc"
+import FlowServiceAccount from "./env/FlowServiceAccount.cdc"
 
 pub contract SwapFactory {
     /// Account which has deployed pair template contract
@@ -38,9 +39,10 @@ pub contract SwapFactory {
     /// Create Pair
     ///
     /// @Param - token0/1Vault: use createEmptyVault() to create init vault types for SwapPair
+    /// @Param - accountCreationFee: fee (0.001 FlowToken) pay for the account creation.
     /// @Param - storageFeeVault: An initial flowtoken can be provided for backing storage.
     ///
-    pub fun createPair(token0Vault: @FungibleToken.Vault, token1Vault: @FungibleToken.Vault, storageFeeVault: @FungibleToken.Vault?): Address {
+    pub fun createPair(token0Vault: @FungibleToken.Vault, token1Vault: @FungibleToken.Vault, accountCreationFee: @FungibleToken.Vault, storageFeeVault: @FungibleToken.Vault?): Address {
         pre {
             token0Vault.balance == 0.0 && token1Vault.balance == 0.0:
                 SwapError.ErrorEncode(
@@ -77,6 +79,15 @@ pub contract SwapFactory {
                 weight: 1000.0
             )
         }
+
+        assert(
+            accountCreationFee.balance >= FlowServiceAccount.accountCreationFee, message:
+            SwapError.ErrorEncode(
+                msg: "Insufficient account creation fee",
+                err: SwapError.ErrorCode.INVALID_PARAMETERS
+            )
+        )
+        self.account.getCapability(/public/flowTokenReceiver).borrow<&{FungibleToken.Receiver}>()!.deposit(from: <-accountCreationFee)
 
         let pairAddress = pairAccount.address
         /// Add initial flow tokens for deployment
