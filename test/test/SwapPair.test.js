@@ -253,7 +253,6 @@ describe("Swap Pair Testsuites", () => {
 
         // remove user0's liquidity
         let user0LpTokenAmount = await queryLptokenBalance(userAddr0, tokenName0, tokenName1)
-        console.log(user0LpTokenAmount)
         await removeLiquidity(userAddr0, tokenName0, tokenName1, user0LpTokenAmount, 0.5, 500)
         expect(
             await queryLptokenBalance(userAddr0, tokenName0, tokenName1)

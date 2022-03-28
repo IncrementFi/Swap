@@ -8,7 +8,6 @@ transaction(
     exactAmountIn: UFix64,
     amountOutMin: UFix64,
     deadline: UFix64,
-
     tokenInVaultPath: StoragePath,
     tokenOutVaultPath: StoragePath,
     tokenOutReceiverPath: PublicPath,
@@ -16,11 +15,9 @@ transaction(
 ) {
     prepare(userAccount: AuthAccount) {
         
-        var len = tokenKeyPath.length
+        let len = tokenKeyPath.length
         let tokenInKey = tokenKeyPath[0]
         let tokenOutKey = tokenKeyPath[len-1]
-
-        var tokenOutAmountTotal = 0.0
 
         var tokenOutReceiverRef = userAccount.borrow<&FungibleToken.Vault>(from: tokenOutVaultPath)
         if tokenOutReceiverRef == nil {
@@ -40,7 +37,6 @@ transaction(
             deadline: deadline
         )
 
-        log("out ".concat(vaultOut.balance.toString()))
         tokenOutReceiverRef!.deposit(from: <-vaultOut)
     }
 }

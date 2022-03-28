@@ -17,7 +17,7 @@ pub contract SwapError {
         pub case SLIPPAGE_OFFSET_TOO_LARGE
         pub case EXCESSIVE_INPUT_AMOUNT
         pub case EXPIRED
-        pub case INSUFFICIENT_INPUT_AMOUNT
+        pub case INSUFFICIENT_OUTPUT_AMOUNT
         pub case MISMATCH_LPTOKEN_VAULT // 10
         pub case ADD_ZERO_LIQUIDITY
         pub case REENTRANT

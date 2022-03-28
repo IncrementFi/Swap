@@ -12,7 +12,7 @@ import SwapError from "./SwapError.cdc"
 import SwapInterfaces from "./SwapInterfaces.cdc"
 
 pub contract SwapRouter {
-    /// Perform a chained swap calculation start with exact amountIn
+    /// Perform a chained swap calculation starting with exact amountIn
     ///
     /// @Param  - amountIn:     e.g. 50.0
     /// @Param  - tokenKeyPath: e.g. [A.f8d6e0586b0a20c7.FUSD, A.f8d6e0586b0a20c7.FlowToken, A.f8d6e0586b0a20c7.USDC]
@@ -20,7 +20,7 @@ pub contract SwapRouter {
     ///
     pub fun getAmountsOut(amountIn: UFix64, tokenKeyPath: [String]): [UFix64] {
         pre {
-            tokenKeyPath.length >= 2: SwapError.ErrorEncode(msg: "Invalid path.", err: SwapError.ErrorCode.INVALID_PARAMETERS)
+            tokenKeyPath.length >= 2: SwapError.ErrorEncode(msg: "SwapRouter: Invalid path", err: SwapError.ErrorCode.INVALID_PARAMETERS)
         }
         var amounts: [UFix64] = []
         for tokenKey in tokenKeyPath {
@@ -32,14 +32,14 @@ pub contract SwapRouter {
         while (i < tokenKeyPath.length-1) {
             let pairAddr = SwapFactory.getPairAddress(token0Key: tokenKeyPath[i], token1Key: tokenKeyPath[i+1]) ?? panic(
                 SwapError.ErrorEncode(
-                    msg: "Non-existing swap pair with ".concat(tokenKeyPath[i]).concat(" ").concat(tokenKeyPath[i+1]),
+                    msg: "SwapRouter: nonexistent pair ".concat(tokenKeyPath[i]).concat(" <-> ").concat(tokenKeyPath[i+1]),
                     err: SwapError.ErrorCode.NONEXISTING_SWAP_PAIR
                 )
             )
             
             let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow() ?? panic(
                 SwapError.ErrorEncode(
-                    msg: "Lost SwapPair public capability",
+                    msg: "SwapRouter: Lost SwapPair public capability",
                     err: SwapError.ErrorCode.LOST_PUBLIC_CAPABILITY
                 )
             )
@@ -56,7 +56,7 @@ pub contract SwapRouter {
     ///
     pub fun getAmountsIn(amountOut: UFix64, tokenKeyPath: [String]): [UFix64] {
         pre {
-            tokenKeyPath.length >= 2: SwapError.ErrorEncode(msg: "Invalid path.", err: SwapError.ErrorCode.INVALID_PARAMETERS)
+            tokenKeyPath.length >= 2: SwapError.ErrorEncode(msg: "SwapRouter: Invalid path", err: SwapError.ErrorCode.INVALID_PARAMETERS)
         }
         var amounts: [UFix64] = []
         for tokenKey in tokenKeyPath {
@@ -68,14 +68,14 @@ pub contract SwapRouter {
         while (i > 0) {
             let pairAddr = SwapFactory.getPairAddress(token0Key: tokenKeyPath[i], token1Key: tokenKeyPath[i-1]) ?? panic(
                 SwapError.ErrorEncode(
-                    msg: "Non-existing swap pair with ".concat(tokenKeyPath[i]).concat(" ").concat(tokenKeyPath[i+1]),
+                    msg: "SwapRouter: nonexistent pair ".concat(tokenKeyPath[i]).concat(" <-> ").concat(tokenKeyPath[i+1]),
                     err: SwapError.ErrorCode.NONEXISTING_SWAP_PAIR
                 )
             )
             
             let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow() ?? panic(
                 SwapError.ErrorEncode(
-                    msg: "Lost SwapPair public capability",
+                    msg: "SwapRouter: Lost SwapPair public capability",
                     err: SwapError.ErrorCode.LOST_PUBLIC_CAPABILITY
                 )
             )
@@ -91,13 +91,13 @@ pub contract SwapRouter {
     /// SwapExactTokensForTokens
     ///
     /// Make sure the exact amountIn in swap start
-    /// @Param  - exactVaultIn:      Vault with exact amountIn
-    /// @Param  - amountOutMin: Desired minimum amountOut if slippage occurs
+    /// @Param  - exactVaultIn: Vault with exact amountIn
+    /// @Param  - amountOutMin: Desired minimum amountOut to do slippage check
     /// @Param  - tokenKeyPath: Chained swap
     ///                         e.g. if swap from FUSD to USDC through FlowToken
     ///                              [A.f8d6e0586b0a20c7.FUSD, A.f8d6e0586b0a20c7.FlowToken, A.f8d6e0586b0a20c7.USDC]
     /// @Param  - deadline:     The timeout block timestamp for the transaction
-    /// @Return - Vault:        Swap out vault
+    /// @Return - Vault:        outVault
     ///
     pub fun swapExactTokensForTokens(
         exactVaultIn: @FungibleToken.Vault,
@@ -105,32 +105,31 @@ pub contract SwapRouter {
         tokenKeyPath: [String],
         deadline: UFix64
     ): @FungibleToken.Vault {
-        let amounts = self.getAmountsOut(amountIn: exactVaultIn.balance, tokenKeyPath: tokenKeyPath)
-        assert( amounts[amounts.length-1] >= amountOutMin, message:
+        assert(deadline >= getCurrentBlock().timestamp, message:
             SwapError.ErrorEncode(
-                msg: "SLIPPAGE_OFFSET_TOO_LARGE",
-                err: SwapError.ErrorCode.SLIPPAGE_OFFSET_TOO_LARGE
-            )
-        )
-        assert( deadline >= getCurrentBlock().timestamp, message:
-            SwapError.ErrorEncode(
-                msg: "EXPIRED",
+                msg: "SwapRouter: expired",
                 err: SwapError.ErrorCode.EXPIRED
             )
         )
-        
+        let amounts = self.getAmountsOut(amountIn: exactVaultIn.balance, tokenKeyPath: tokenKeyPath)
+        assert(amounts[amounts.length-1] >= amountOutMin, message:
+            SwapError.ErrorEncode(
+                msg: "SwapRouter: INSUFFICIENT_OUTPUT_AMOUNT",
+                err: SwapError.ErrorCode.INSUFFICIENT_OUTPUT_AMOUNT
+            )
+        )
         return <- self.swapWithPath(vaultIn: <-exactVaultIn, tokenKeyPath: tokenKeyPath, exactAmounts: nil)
     }
 
     /// SwapTokensForExactTokens
     ///
-    /// @Param  - vaultInMax:     Vault with enough amount to swap
+    /// @Param  - vaultInMax:     Vault with enough input to swap, checks slippage
     /// @Param  - exactAmountOut: Make sure the exact amountOut in swap end
     /// @Param  - tokenKeyPath:   Chained swap
     ///                           e.g. if swap from FUSD to USDC through FlowToken
     ///                                [A.f8d6e0586b0a20c7.FUSD, A.f8d6e0586b0a20c7.FlowToken, A.f8d6e0586b0a20c7.USDC]
     /// @Param  - deadline:       The timeout block timestamp for the transaction
-    /// @Return - [OutVault, RemainVault]
+    /// @Return - [OutVault, RemainingInVault]
     ///
     pub fun swapTokensForExactTokens(
         vaultInMax: @FungibleToken.Vault,
@@ -138,21 +137,20 @@ pub contract SwapRouter {
         tokenKeyPath: [String],
         deadline: UFix64
     ): @[FungibleToken.Vault] {
-        let amountInMax = vaultInMax.balance
-        let amounts = self.getAmountsIn(amountOut: exactAmountOut, tokenKeyPath: tokenKeyPath)
-        assert( amounts[0] <= amountInMax, message:
+        assert(deadline >= getCurrentBlock().timestamp, message:
             SwapError.ErrorEncode(
-                msg: "SLIPPAGE_OFFSET_TOO_LARGE",
-                err: SwapError.ErrorCode.SLIPPAGE_OFFSET_TOO_LARGE
-            )
-        )
-        assert( deadline >= getCurrentBlock().timestamp, message:
-            SwapError.ErrorEncode(
-                msg: "EXPIRED",
+                msg: "SwapRouter: expired",
                 err: SwapError.ErrorCode.EXPIRED
             )
         )
-        
+        let amountInMax = vaultInMax.balance
+        let amounts = self.getAmountsIn(amountOut: exactAmountOut, tokenKeyPath: tokenKeyPath)
+        assert(amounts[0] <= amountInMax, message:
+            SwapError.ErrorEncode(
+                msg: "SwapRouter: EXCESSIVE_INPUT_AMOUNT",
+                err: SwapError.ErrorCode.EXCESSIVE_INPUT_AMOUNT
+            )
+        )
         let vaultInExact <- vaultInMax.withdraw(amount: amounts[0])
 
         return <-[<-self.swapWithPath(vaultIn: <-vaultInExact, tokenKeyPath: tokenKeyPath, exactAmounts: amounts), <-vaultInMax]
@@ -222,5 +220,4 @@ pub contract SwapRouter {
         let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!
         return <- pairPublicRef.swap(vaultIn: <- vaultIn, exactAmountOut: exactAmountOut)
     }
-
 }

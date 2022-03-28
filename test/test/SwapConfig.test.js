@@ -31,7 +31,6 @@ describe("SwapConfig Testsuites", () => {
 
     it("Test sqrt", async () => {
         await deployConfigContract();
-        console.log((await sqrt(0.0000))[0])
         expect(
             (await sqrt(1.0000))[0]
         ).toBe(

@@ -308,8 +308,8 @@ pub contract SwapPair: FungibleToken {
         if exactAmountOut != nil {
             assert(amountOut >= exactAmountOut!, message:
                 SwapError.ErrorEncode(
-                    msg: "INSUFFICIENT_INPUT_AMOUNT",
-                    err: SwapError.ErrorCode.INSUFFICIENT_INPUT_AMOUNT
+                    msg: "SwapPair: INSUFFICIENT_OUTPUT_AMOUNT",
+                    err: SwapError.ErrorCode.INSUFFICIENT_OUTPUT_AMOUNT
                 )
             )
             amountOut = exactAmountOut!
@@ -372,7 +372,7 @@ pub contract SwapPair: FungibleToken {
                     let lpTokenCollectionCap = getAccount(SwapFactory.feeTo!).getCapability<&{SwapInterfaces.LpTokenCollectionPublic}>(SwapConfig.LpTokenCollectionPublicPath)
                     assert(lpTokenCollectionCap.check(), message:
                         SwapError.ErrorEncode(
-                            msg: "Cannot borrow reference to LpTokenCollection resource in feeTo account",
+                            msg: "SwapPair: Cannot borrow reference to LpTokenCollection resource in feeTo account",
                             err: SwapError.ErrorCode.LOST_PUBLIC_CAPABILITY
                         )
                     )

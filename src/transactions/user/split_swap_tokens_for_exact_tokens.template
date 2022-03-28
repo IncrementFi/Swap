@@ -9,7 +9,6 @@ transaction(
     amountOutSplit: [UFix64],
     amountInMax: UFix64,
     deadline: UFix64,
-
     tokenInVaultPath: StoragePath,
     tokenOutVaultPath: StoragePath,
     tokenOutReceiverPath: PublicPath,
@@ -23,8 +22,7 @@ transaction(
             )
         )
 
-        var len = tokenKeyFlatSplitPath.length
-
+        let len = tokenKeyFlatSplitPath.length
         let tokenInKey = tokenKeyFlatSplitPath[0]
         let tokenOutKey = tokenKeyFlatSplitPath[len-1]
 
@@ -49,18 +47,13 @@ transaction(
             if (curTokenKey == tokenOutKey) {
                 log(path)
 
-                var tokenOutExpectAmount = amountOutSplit[pathIndex]
+                let tokenOutExpectAmount = amountOutSplit[pathIndex]
                 let amounts = SwapRouter.getAmountsIn(amountOut: tokenOutExpectAmount, tokenKeyPath: path)
-                var tokenInAmount = amounts[0]
+                let tokenInAmount = amounts[0]
                 amountInTotal = amountInTotal + tokenInAmount
 
-                log("in ".concat(tokenInAmount.toString()))
-
                 let tokenInVault <- userAccount.borrow<&FungibleToken.Vault>(from: tokenInVaultPath)!.withdraw(amount: tokenInAmount)
-
                 let tokenOutVault <- SwapRouter.swapWithPath(vaultIn: <- tokenInVault, tokenKeyPath: path, exactAmounts: amounts)
-
-                log("out ".concat(tokenOutVault.balance.toString()))
 
                 tokenOutAmountTotal = tokenOutAmountTotal + tokenOutVault.balance
                 tokenOutReceiverRef!.deposit(from: <- tokenOutVault)
@@ -70,11 +63,8 @@ transaction(
             }
             i = i + 1
         }
-        
-        log("total out ".concat(tokenOutAmountTotal.toString()))
-        log("max in ".concat(amountInMax.toString()))
 
-        assert( amountInTotal <= amountInMax, message:
+        assert(amountInTotal <= amountInMax, message:
             SwapError.ErrorEncode(
                 msg: "SLIPPAGE_OFFSET_TOO_LARGE",
                 err: SwapError.ErrorCode.SLIPPAGE_OFFSET_TOO_LARGE
