@@ -43,7 +43,15 @@ transaction(
         log("=====> remove liquidity: ".concat(token0Key).concat(token1Key))
         log("return tokens amounts:".concat(token0Vault.balance.toString()).concat(", ").concat(token1Vault.balance.toString()))
         /// Here does not detect whether the local receiver vault exsit.
-        userAccount.borrow<&FungibleToken.Vault>(from: token0VaultPath)!.deposit(from: <-token0Vault)
-        userAccount.borrow<&FungibleToken.Vault>(from: token1VaultPath)!.deposit(from: <-token1Vault)
+        let localVault0Ref = userAccount.borrow<&FungibleToken.Vault>(from: token0VaultPath)!
+        let localVault1Ref = userAccount.borrow<&FungibleToken.Vault>(from: token1VaultPath)!
+        if token0Vault.isInstance(localVault0Ref.getType()) {
+            localVault0Ref.deposit(from: <-token0Vault)
+            localVault1Ref.deposit(from: <-token1Vault)
+        } else {
+            localVault0Ref.deposit(from: <-token1Vault)
+            localVault1Ref.deposit(from: <-token0Vault)
+        
+        }
     }
 }
