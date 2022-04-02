@@ -1,0 +1,35 @@
+import FungibleToken from "../../contracts/tokens/FungibleToken.cdc"
+pub fun main(tokenName: String, tokenAddr: Address, userAddr: Address): {String: AnyStruct} {
+
+    let code = getAccount(tokenAddr).contracts.get(name: tokenName)!.code
+    
+    var localPrefix = ""
+    var balancePath = /public/PathPrefix1Balance
+    var receiverPath = /public/PathPrefix1Receiver
+    if getAccount(userAddr).getCapability<&{FungibleToken.Balance}>(balancePath).check() && getAccount(userAddr).getCapability<&{FungibleToken.Receiver}>(receiverPath).check() {
+        localPrefix = "PathPrefix1"
+    }
+
+    balancePath = /public/PathPrefix2Balance
+    receiverPath = /public/PathPrefix2Receiver
+    if getAccount(userAddr).getCapability<&{FungibleToken.Balance}>(balancePath).check() && getAccount(userAddr).getCapability<&{FungibleToken.Receiver}>(receiverPath).check() {
+        localPrefix = "PathPrefix2"
+    }
+
+    balancePath = /public/PathPrefix3Balance
+    receiverPath = /public/PathPrefix3Receiver
+    if getAccount(userAddr).getCapability<&{FungibleToken.Balance}>(balancePath).check() && getAccount(userAddr).getCapability<&{FungibleToken.Receiver}>(receiverPath).check() {
+        localPrefix = "PathPrefix3"
+    }
+
+    balancePath = /public/PathPrefix4Balance
+    receiverPath = /public/PathPrefix4Receiver
+    if getAccount(userAddr).getCapability<&{FungibleToken.Balance}>(balancePath).check() && getAccount(userAddr).getCapability<&{FungibleToken.Receiver}>(receiverPath).check() {
+        localPrefix = "PathPrefix4"
+    }
+
+    return {
+        "LocalPrefix": localPrefix,
+        "TokenCode": code
+    }
+}
