@@ -192,7 +192,7 @@ Similar to uniswap, most interactions with Dex are done through SwapRouter.
     deadline = 1649415103.00000000 + 600.0
 ```
 
-### Setup the slippage
+### Setup the swap slippage
 * Before sending the swap transaction, use the script:getAmountsOut() to calculate how much FUSD can be exchanged out currently.
 1. Script: getAmountsOut()
 ```cadence
@@ -228,7 +228,6 @@ Similar to uniswap, most interactions with Dex are done through SwapRouter.
         return amounts[0]  // return 0.1
     }
 ```
-
 
 ### Script: Query all pools' balances
 ```cadence
@@ -276,3 +275,170 @@ Similar to uniswap, most interactions with Dex are done through SwapRouter.
     }
 ```
 
+### Add liquidity for Flow and FUSD
+When the current balance of the Flow-FUSD pool is queried by the script (above), the proportion of liquidity that needs to be added can be calculated.
+For example, Flow-FUSD's balance is 1000-5400.
+If want to add liquidity with slippage 25%:
+token0InDesired = 100.0
+token1InDesired = 540.0
+token0InMin = 100.0 * (1.0-0.25)
+token1InMin = 540.0 * (1.0-0.25)
+
+then send transaction.
+The lpToken will be stored in the user's local collection, and the pool's address will be used as a unique identifier.
+
+```cadence
+import FungibleToken from 0xf233dcee88fe0abe
+import SwapFactory from 0xb063c16cac85dbd1
+import SwapInterfaces from 0xb78ef7afa52ff906
+import SwapConfig from 0xb78ef7afa52ff906
+
+transaction(
+    token0InDesired: UFix64,
+    token1InDesired: UFix64,
+    token0InMin: UFix64,
+    token1InMin: UFix64
+) {
+    prepare(userAccount: AuthAccount) {
+        let token0Key = "A.7e60df042a9c0868.FlowToken"
+        let token1Key = "A.e223d8a629e49c68.FUSD"
+        let token0VaultPath = /storage/flowTokenVault
+        let token1VaultPath = /storage/fusdVault
+        
+        let pairAddr = SwapFactory.getPairAddress(token0Key: token0Key, token1Key: token1Key)
+            ?? panic("AddLiquidity: nonexistent pair ".concat(token0Key).concat(" <-> ").concat(token1Key).concat(", create pair first"))
+
+        /// Pair's public interfaces
+        let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!
+        
+        /*
+            pairInfo = [
+                SwapPair.token0Key,
+                SwapPair.token1Key,
+                SwapPair.token0Vault.balance,
+                SwapPair.token1Vault.balance,
+                SwapPair.account.address,
+                SwapPair.totalSupply
+            ]
+        */
+        let pairInfo = pairPublicRef.getPairInfo()
+        var token0In = 0.0
+        var token1In = 0.0
+        var token0Reserve = 0.0
+        var token1Reserve = 0.0
+        if token0Key == (pairInfo[0] as! String) {
+            token0Reserve = (pairInfo[2] as! UFix64)
+            token1Reserve = (pairInfo[3] as! UFix64)
+        } else {
+            token0Reserve = (pairInfo[3] as! UFix64)
+            token1Reserve = (pairInfo[2] as! UFix64)
+        }
+        if token0Reserve == 0.0 && token1Reserve == 0.0 {
+            token0In = token0InDesired
+            token1In = token1InDesired
+        } else {
+            var amount1Optimal = SwapConfig.quote(amountA: token0InDesired, reserveA: token0Reserve, reserveB: token1Reserve)
+            if (amount1Optimal <= token1InDesired) {
+                assert(amount1Optimal >= token1InMin, message: "SLIPPAGE_OFFSET_TOO_LARGE expect min".concat(token1InMin.toString()).concat(" got ").concat(amount1Optimal.toString()))
+                token0In = token0InDesired
+                token1In = amount1Optimal
+            } else {
+                var amount0Optimal = SwapConfig.quote(amountA: token1InDesired, reserveA: token1Reserve, reserveB: token0Reserve)
+                assert(amount0Optimal <= token0InDesired)
+                assert(amount0Optimal >= token0InMin, message: "SLIPPAGE_OFFSET_TOO_LARGE expect min".concat(token0InMin.toString()).concat(" got ").concat(amount0Optimal.toString()))
+                token0In = amount0Optimal
+                token1In = token1InDesired
+            }
+        }
+        
+        let token0Vault <- userAccount.borrow<&FungibleToken.Vault>(from: token0VaultPath)!.withdraw(amount: token0In)
+        let token1Vault <- userAccount.borrow<&FungibleToken.Vault>(from: token1VaultPath)!.withdraw(amount: token1In)
+        let lpTokenVault <- pairPublicRef.addLiquidity(
+            tokenAVault: <- token0Vault,
+            tokenBVault: <- token1Vault
+        )
+        
+        /// Save lpToken in collection
+        let lpTokenCollectionStoragePath = SwapConfig.LpTokenCollectionStoragePath
+        let lpTokenCollectionPublicPath = SwapConfig.LpTokenCollectionPublicPath
+        var lpTokenCollectionRef = userAccount.borrow<&SwapFactory.LpTokenCollection>(from: lpTokenCollectionStoragePath)
+        if lpTokenCollectionRef == nil {
+            destroy <- userAccount.load<@AnyResource>(from: lpTokenCollectionStoragePath)
+            userAccount.save(<-SwapFactory.createEmptyLpTokenCollection(), to: lpTokenCollectionStoragePath)
+            userAccount.link<&{SwapInterfaces.LpTokenCollectionPublic}>(lpTokenCollectionPublicPath, target: lpTokenCollectionStoragePath)
+            lpTokenCollectionRef = userAccount.borrow<&SwapFactory.LpTokenCollection>(from: lpTokenCollectionStoragePath)
+        }
+        lpTokenCollectionRef!.deposit(pairAddr: pairAddr, lpTokenVault: <- lpTokenVault)
+    }
+}
+```
+
+### Query user's lpToken balance
+
+Use `SwapFactory.getPairInfo(token0Key: token0Key, token1Key: token1Key)` to query the address of Flow-FUSD’s pool.
+Through the following script, you can get all the lptoken of the user.
+```cadence
+import SwapFactory from 0xb063c16cac85dbd1
+import SwapConfig from 0xb78ef7afa52ff906
+import SwapInterfaces from 0xb78ef7afa52ff906
+
+/// Return { PairAddress: UserLpTokenBalance }
+pub fun main(userAddr: Address): {Address: UFix64} {
+    var lpTokenCollectionPublicPath = SwapConfig.LpTokenCollectionPublicPath
+    let lpTokenCollectionCap = getAccount(userAddr).getCapability<&{SwapInterfaces.LpTokenCollectionPublic}>(lpTokenCollectionPublicPath)
+    if lpTokenCollectionCap.check() == false {
+        return {}
+    }
+    let lpTokenCollectionRef = lpTokenCollectionCap.borrow()!
+    let liquidityPairAddrs = lpTokenCollectionRef.getAllLPTokens()
+    var res: {Address: UFix64} = {}
+    for pairAddr in liquidityPairAddrs {
+        var lpTokenAmount = lpTokenCollectionRef.getLpTokenBalance(pairAddr: pairAddr)
+        res[pairAddr] = lpTokenAmount
+    }
+    return res
+}
+```
+
+### Remove liquidity of Flow-FUSD
+```cadence
+import FungibleToken from 0xf233dcee88fe0abe
+import SwapFactory from 0xb063c16cac85dbd1
+import SwapInterfaces from 0xb78ef7afa52ff906
+import SwapConfig from 0xb78ef7afa52ff906
+
+transaction(
+    lpTokenAmount: UFix64
+) {
+    prepare(userAccount: AuthAccount) {
+        let token0Key = "A.7e60df042a9c0868.FlowToken"
+        let token1Key = "A.e223d8a629e49c68.FUSD"
+        let token0VaultPath = /storage/flowTokenVault
+        let token1VaultPath = /storage/fusdVault
+        
+
+        let pairAddr = SwapFactory.getPairAddress(token0Key: token0Key, token1Key: token1Key)
+            ?? panic("RemoveLiquidity: nonexistent pair ".concat(token0Key).concat(" <-> ").concat(token1Key).concat(", create pair first"))
+        let lpTokenCollectionRef = userAccount.borrow<&SwapFactory.LpTokenCollection>(from: SwapConfig.LpTokenCollectionStoragePath)
+            ?? panic("RemoveLiquidity: cannot borrow reference to LpTokenCollection")
+
+        let lpTokenRemove <- lpTokenCollectionRef.withdraw(pairAddr: pairAddr, amount: lpTokenAmount)
+        let tokens <- getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!.removeLiquidity(lpTokenVault: <-lpTokenRemove)
+        let token0Vault <- tokens[0].withdraw(amount: tokens[0].balance)
+        let token1Vault <- tokens[1].withdraw(amount: tokens[1].balance)
+        destroy tokens
+
+        /// Here does not detect whether the local receiver vault exsit.
+        let localVault0Ref = userAccount.borrow<&FungibleToken.Vault>(from: token0VaultPath)!
+        let localVault1Ref = userAccount.borrow<&FungibleToken.Vault>(from: token1VaultPath)!
+        if token0Vault.isInstance(localVault0Ref.getType()) {
+            localVault0Ref.deposit(from: <-token0Vault)
+            localVault1Ref.deposit(from: <-token1Vault)
+        } else {
+            localVault0Ref.deposit(from: <-token1Vault)
+            localVault1Ref.deposit(from: <-token0Vault)
+        
+        }
+    }
+}
+```
