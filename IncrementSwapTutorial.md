@@ -64,13 +64,13 @@ The vault of FlowToken does not need to be initialized and it will be automatica
 ---
 
 ## Contract Addresses
-| Contract | Address |
-| --: | :-- |
-| SwapFactory | 0xb063c16cac85dbd1 |
-| SwapRouter | 0xa6850776a94e6551 |
-| SwapConfig | 0xb78ef7afa52ff906 |
-| SwapInterfaces | 0xb78ef7afa52ff906 |
-| SwapError | 0xb78ef7afa52ff906 |
+| Contract | Address | FlowScan |
+| --: | :-- | :--:|
+| SwapFactory | 0xb063c16cac85dbd1 | [Code](https://flow-view-source.com/mainnet/account/0xb063c16cac85dbd1/contract/SwapFactory) |
+| SwapRouter | 0xa6850776a94e6551 | [Code](https://flow-view-source.com/mainnet/account/0xa6850776a94e6551/contract/SwapRouter) |
+| SwapConfig | 0xb78ef7afa52ff906 | [Code](https://flow-view-source.com/mainnet/account/0xb78ef7afa52ff906) |
+| SwapInterfaces | 0xb78ef7afa52ff906 | |
+| SwapError | 0xb78ef7afa52ff906 | |
 
 ## A quick example swap from Flow to FUSD
 Similar to uniswap, most interactions with Dex are done through SwapRouter.
