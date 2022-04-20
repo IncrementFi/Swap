@@ -14,11 +14,6 @@ transaction(
     tokenOutBalancePath: PublicPath,
 ) {
     prepare(userAccount: AuthAccount) {
-        
-        let len = tokenKeyPath.length
-        let tokenInKey = tokenKeyPath[0]
-        let tokenOutKey = tokenKeyPath[len-1]
-
         var tokenOutReceiverRef = userAccount.borrow<&FungibleToken.Vault>(from: tokenOutVaultPath)
         if tokenOutReceiverRef == nil {
             userAccount.save(<- TokenOutName.createEmptyVault(), to: tokenOutVaultPath)
