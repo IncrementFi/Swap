@@ -1,21 +1,4 @@
 {
-  "name": "swap-v2",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "jest"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/IncrementFi/Swap-v2.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/IncrementFi/Swap-v2/issues"
-  },
-  "homepage": "https://github.com/IncrementFi/Swap-v2/blob/main/README.md",
   "dependencies": {
     "@onflow/fcl": "^0.0.77",
     "@onflow/types": "^0.0.6",
@@ -24,10 +7,39 @@
     "dotenv": "^11.0.0",
     "elliptic": "^6.5.4",
     "express": "^4.17.2",
+    "heap": "^0.2.7",
     "https-proxy-agent": "^5.0.0",
     "log-timestamp": "^0.3.0",
     "node-fetch": "^2.6.2",
-    "sha3": "^2.1.4",
-    "heap": "^0.2.7"
+    "sha3": "^2.1.4"
+  },
+  "name": "Increment-Swap",
+  "version": "1.0.1",
+  "description": "A fully Permissionless Decentralized Exchange (CFAMM-based) on Flow Blockchain.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "jest --coverage --runInBand"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IncrementFi/Swap-v2.git"
+  },
+  "keywords": [],
+  "author": "Increment Labs",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/IncrementFi/Swap-v2/issues"
+  },
+  "homepage": "https://github.com/IncrementFi/Swap-v2#readme",
+  "devDependencies": {
+    "@babel/core": "^7.18.2",
+    "@babel/preset-env": "^7.18.2",
+    "babel-jest": "^28.1.1",
+    "flow-js-testing": "^0.2.3-alpha.6",
+    "jest": "^28.1.1",
+    "jest-environment-node": "^28.1.1"
   }
 }
