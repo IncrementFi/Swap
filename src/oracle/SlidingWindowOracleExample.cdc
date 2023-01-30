@@ -105,8 +105,8 @@ pub contract SlidingWindowOracleExample {
         if (blockTimestampLast != currentBlockTimestamp) {
             let timeElapsed = currentBlockTimestamp - blockTimestampLast
             let timeElapsedScaled = SwapConfig.UFix64ToScaledUInt256(timeElapsed)
-            currentPrice0CumulativeScaled = currentPrice0CumulativeScaled + reserve1Scaled * timeElapsedScaled / reserve0Scaled
-            currentPrice1CumulativeScaled = currentPrice1CumulativeScaled + reserve0Scaled * timeElapsedScaled / reserve1Scaled
+            currentPrice0CumulativeScaled = SwapConfig.overflowAddUInt256(currentPrice0CumulativeScaled, reserve1Scaled * timeElapsedScaled / reserve0Scaled)
+            currentPrice1CumulativeScaled = SwapConfig.overflowAddUInt256(currentPrice1CumulativeScaled, reserve0Scaled * timeElapsedScaled / reserve1Scaled)
         }
 
         return [currentPrice0CumulativeScaled, currentPrice1CumulativeScaled, currentBlockTimestamp]
@@ -137,9 +137,6 @@ pub contract SlidingWindowOracleExample {
             if (timeElapsed > )
         }
 
-
-
-
         let res = self.getCurrentCumulativePrices()
         let currentPrice0CumulativeScaled = res[0] as! UInt256
         let currentPrice1CumulativeScaled = res[1] as! UInt256
@@ -149,8 +146,8 @@ pub contract SlidingWindowOracleExample {
         assert(timeElapsed >= self.PERIOD, message: "PERIOD_NOT_ELAPSED ".concat(timeElapsed.toString().concat("s")))
         let timeElapsedScaled = SwapConfig.UFix64ToScaledUInt256(timeElapsed)
 
-        let price0AverageScaled = (currentPrice0CumulativeScaled - self.price0CumulativeLastScaled) * SwapConfig.scaleFactor / timeElapsedScaled
-        let price1AverageScaled = (currentPrice1CumulativeScaled - self.price1CumulativeLastScaled) * SwapConfig.scaleFactor / timeElapsedScaled
+        let price0AverageScaled = SwapConfig.underflowSubtractUInt256(currentPrice0CumulativeScaled, self.price0CumulativeLastScaled) * SwapConfig.scaleFactor / timeElapsedScaled
+        let price1AverageScaled = SwapConfig.underflowSubtractUInt256(currentPrice1CumulativeScaled, self.price1CumulativeLastScaled) * SwapConfig.scaleFactor / timeElapsedScaled
 
         self.price0Average = SwapConfig.ScaledUInt256ToUFix64(price0AverageScaled)
         self.price1Average = SwapConfig.ScaledUInt256ToUFix64(price1AverageScaled)

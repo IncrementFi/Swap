@@ -40,6 +40,28 @@ pub contract SwapConfig {
         let ufixScaledFractional = (scaled % self.scaleFactor) * UInt256(self.ufixScale) / self.scaleFactor
         return UFix64(integral) + (UFix64(ufixScaledFractional) / self.ufixScale)
     }
+
+    /// Utility function to simulate addition of Word256, like Word64 not to throw an overflow error.
+    /// e.g. 10 + UInt256.max = 9
+    ///
+    pub fun overflowAddUInt256(_ value1: UInt256, _ value2: UInt256): UInt256 {
+        if value1 > UInt256.max - value2 {
+            return value2 - (UInt256.max - value1) - 1
+        } else {
+            return value1 + value2
+        }
+    }
+
+    /// Utility function to simulate subtraction of Word256.
+    /// e.g. 10 - UInt256.max = 11
+    ///
+    pub fun underflowSubtractUInt256(_ value1: UInt256, _ value2: UInt256): UInt256 {
+        if value1 >= value2 {
+            return value1 - value2
+        } else {
+            return UInt256.max - value2 + value1 + 1
+        }
+    }
     
     /// SliceTokenTypeIdentifierFromVaultType
     ///

@@ -338,11 +338,14 @@ pub contract SwapPair: FungibleToken {
         if (timeElapsed > 0.0 && reserve0LastScaled != 0 && reserve1LastScaled != 0) {
             let timeElapsedScaled = SwapConfig.UFix64ToScaledUInt256(timeElapsed)
 
-            self.price0CumulativeLastScaled = self.price0CumulativeLastScaled +
+            self.price0CumulativeLastScaled = SwapConfig.overflowAddUInt256(
+                self.price0CumulativeLastScaled,
                 reserve1LastScaled * timeElapsedScaled / reserve0LastScaled
-
-            self.price1CumulativeLastScaled = self.price1CumulativeLastScaled +
+            )
+            self.price1CumulativeLastScaled = SwapConfig.overflowAddUInt256(
+                self.price1CumulativeLastScaled,
                 reserve0LastScaled * timeElapsedScaled / reserve1LastScaled
+            )   
         }
         self.blockTimestampLast = blockTimestamp
     }
