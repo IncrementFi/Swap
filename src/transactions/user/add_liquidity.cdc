@@ -1,5 +1,6 @@
 import FungibleToken from "../../contracts/tokens/FungibleToken.cdc"
 import SwapFactory from "../../contracts/SwapFactory.cdc"
+import StableSwapFactory from "../../contracts/StableSwapFactory.cdc"
 import SwapInterfaces from "../../contracts/SwapInterfaces.cdc"
 import SwapConfig from "../../contracts/SwapConfig.cdc"
 import SwapError from "../../contracts/SwapError.cdc"
@@ -14,6 +15,7 @@ transaction(
     deadline: UFix64,
     token0VaultPath: StoragePath,
     token1VaultPath: StoragePath,
+    stableMode: Bool
 ) {
     prepare(userAccount: AuthAccount) {
         assert(deadline >= getCurrentBlock().timestamp, message:
@@ -22,8 +24,10 @@ transaction(
                 err: SwapError.ErrorCode.EXPIRED
             )
         )
-        let pairAddr = SwapFactory.getPairAddress(token0Key: token0Key, token1Key: token1Key)
-            ?? panic("AddLiquidity: nonexistent pair ".concat(token0Key).concat(" <-> ").concat(token1Key).concat(", create pair first"))
+        let pairAddr = (stableMode)? 
+            StableSwapFactory.getPairAddress(token0Key: token0Key, token1Key: token1Key) ?? panic("AddLiquidity: nonexistent stable pair ".concat(token0Key).concat(" <-> ").concat(token1Key).concat(", create stable pair first"))
+            :
+            SwapFactory.getPairAddress(token0Key: token0Key, token1Key: token1Key) ?? panic("AddLiquidity: nonexistent pair ".concat(token0Key).concat(" <-> ").concat(token1Key).concat(", create pair first"))
         let pairPublicRef = getAccount(pairAddr).getCapability<&{SwapInterfaces.PairPublic}>(SwapConfig.PairPublicPath).borrow()!
         /*
             pairInfo = [

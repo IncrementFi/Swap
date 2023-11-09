@@ -10,6 +10,7 @@ import SwapInterfaces from "./SwapInterfaces.cdc"
 import SwapConfig from "./SwapConfig.cdc"
 import SwapError from "./SwapError.cdc"
 import SwapFactory from "./SwapFactory.cdc"
+import DelegatorManager from "./tokens/DelegatorManager.cdc"
 
 pub contract SwapPair: FungibleToken {
     /// Total supply of pair lpTokens in existence
@@ -497,8 +498,17 @@ pub contract SwapPair: FungibleToken {
         return SwapFactory.getSwapFeeRateBps(stableMode: self.isStableSwap())
     }
 
+    /// P for stFlow <> Flow pair
     pub fun getStableCurveP(): UFix64 {
-        return 1.0
+        if (self.token0Key == "A.1654653399040a61.FlowToken" && self.token1Key == "A.d6f80565193ad727.stFlowToken") {
+            let price_flow2Stflow = DelegatorManager.borrowCurrentQuoteEpochSnapshot().scaledQuoteFlowStFlow
+            return SwapConfig.ScaledUInt256ToUFix64(price_flow2Stflow)
+        } else if (self.token1Key == "A.1654653399040a61.FlowToken" && self.token0Key == "A.d6f80565193ad727.stFlowToken") {
+            let price_stflow2Flow = DelegatorManager.borrowCurrentQuoteEpochSnapshot().scaledQuoteStFlowFlow
+            return SwapConfig.ScaledUInt256ToUFix64(price_stflow2Flow)
+        } else {
+            return 1.0
+        }
     }
 
     /// Public interfaces

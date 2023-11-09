@@ -21,6 +21,9 @@ pub contract SwapError {
         pub case MISMATCH_LPTOKEN_VAULT // 10
         pub case ADD_ZERO_LIQUIDITY
         pub case REENTRANT
+        pub case FLASHLOAN_EXECUTOR_SETUP
+        pub case FEE_TO_SETUP
+        pub case BELOW_MINIMUM_INITIAL_LIQUIDITY // 15
     }
 
     pub fun ErrorEncode(msg: String, err: ErrorCode): String {

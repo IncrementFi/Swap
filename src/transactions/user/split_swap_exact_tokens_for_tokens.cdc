@@ -1,0 +1,69 @@
+import FungibleToken from "../../contracts/tokens/FungibleToken.cdc"
+import SwapRouter from "../../contracts/SwapRouter.cdc"
+import SwapError from "../../contracts/SwapError.cdc"
+
+transaction(
+    tokenKeyFlatSplitPath: [String],
+    amountInSplit: [UFix64],
+    amountOutMin: UFix64,
+    deadline: UFix64,
+    tokenInVaultPath: StoragePath,
+    tokenOutVaultPath: StoragePath,
+    tokenOutReceiverPath: PublicPath,
+    tokenOutBalancePath: PublicPath,
+    Token1Name: String,
+    Token1Addr: Address
+) {
+    prepare(userAccount: AuthAccount) {
+        assert(deadline >= getCurrentBlock().timestamp, message:
+            SwapError.ErrorEncode(
+                msg: "EXPIRED",
+                err: SwapError.ErrorCode.EXPIRED
+            )
+        )
+
+        let len = tokenKeyFlatSplitPath.length
+        let tokenInKey = tokenKeyFlatSplitPath[0]
+        let tokenOutKey = tokenKeyFlatSplitPath[len-1]
+
+        var tokenOutAmountTotal = 0.0
+
+        var tokenOutReceiverRef = userAccount.borrow<&FungibleToken.Vault>(from: tokenOutVaultPath)
+        if tokenOutReceiverRef == nil {
+            userAccount.save(<-getAccount(Token1Addr).contracts.borrow<&FungibleToken>(name: Token1Name)!.createEmptyVault(), to: tokenOutVaultPath)
+            userAccount.link<&{FungibleToken.Receiver}>(tokenOutReceiverPath, target: tokenOutVaultPath)
+            userAccount.link<&{FungibleToken.Balance}>(tokenOutBalancePath, target: tokenOutVaultPath)
+
+            tokenOutReceiverRef = userAccount.borrow<&FungibleToken.Vault>(from: tokenOutVaultPath)
+        }
+
+        var pathIndex = 0
+        var i = 0
+        var path: [String] = []
+        while(i < len) {
+            var curTokenKey = tokenKeyFlatSplitPath[i]
+            path.append(curTokenKey)
+            if (curTokenKey == tokenOutKey) {
+                log(path)
+                let tokenInAmount = amountInSplit[pathIndex]
+
+                let tokenInVault <- userAccount.borrow<&FungibleToken.Vault>(from: tokenInVaultPath)!.withdraw(amount: tokenInAmount)
+                let tokenOutVault <- SwapRouter.swapWithPath(vaultIn: <- tokenInVault, tokenKeyPath: path, exactAmounts: nil)
+
+                tokenOutAmountTotal = tokenOutAmountTotal + tokenOutVault.balance
+                tokenOutReceiverRef!.deposit(from: <- tokenOutVault)
+
+                path = []
+                pathIndex = pathIndex + 1
+            }
+            i = i + 1
+        }
+
+        assert(tokenOutAmountTotal >= amountOutMin, message:
+            SwapError.ErrorEncode(
+                msg: "SLIPPAGE_OFFSET_TOO_LARGE expect min ".concat(amountOutMin.toString()).concat(" got ").concat(tokenOutAmountTotal.toString()),
+                err: SwapError.ErrorCode.SLIPPAGE_OFFSET_TOO_LARGE
+            )
+        )
+    }
+}

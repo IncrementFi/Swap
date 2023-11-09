@@ -1,6 +1,6 @@
 /**
 
-# The router supports a chained swap trade
+# The router supports a chained swap trade among uni-v2 style volatile pairs 
 
 # Author: Increment Labs
 
@@ -68,7 +68,7 @@ pub contract SwapRouter {
         while (i > 0) {
             let pairAddr = SwapFactory.getPairAddress(token0Key: tokenKeyPath[i], token1Key: tokenKeyPath[i-1]) ?? panic(
                 SwapError.ErrorEncode(
-                    msg: "SwapRouter: nonexistent pair ".concat(tokenKeyPath[i]).concat(" <-> ").concat(tokenKeyPath[i+1]),
+                    msg: "SwapRouter: nonexistent pair ".concat(tokenKeyPath[i]).concat(" <-> ").concat(tokenKeyPath[i-1]),
                     err: SwapError.ErrorCode.NONEXISTING_SWAP_PAIR
                 )
             )
